@@ -1,35 +1,59 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <title>Gestão Toners</title>
-  <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<title>Gestão Toners PRO</title>
 
-  <!-- XLSX -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+<link rel="stylesheet" href="style.css">
+<link rel="manifest" href="manifest.json">
 
-  <!-- QR Scanner -->
-  <script src="https://unpkg.com/html5-qrcode"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+<script src="https://unpkg.com/html5-qrcode"></script>
+
+<script>
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('service-worker.js');
+}
+</script>
 </head>
 
 <body>
 
-<h1>Gestão de Toners</h1>
+<!-- LOGIN -->
+<div id="loginBox">
+  <h2>Login</h2>
+  <input id="email" placeholder="Email">
+  <input id="password" type="password" placeholder="Password">
 
-<button onclick="toggleDark()">🌙 Dark Mode</button>
+  <button onclick="loginUser()">Entrar</button>
+  <button onclick="registarUser()">Criar Conta</button>
+</div>
 
-<!-- MENU -->
+<!-- APP -->
+<div id="app" style="display:none">
+
+<h1>Gestão Toners</h1>
+<button onclick="toggleDark()">🌙</button>
+
 <nav>
+  <button onclick="mudarPagina('dashboard')">Dashboard</button>
   <button onclick="mudarPagina('registo')">Registo</button>
   <button onclick="mudarPagina('stock')">Stock</button>
   <button onclick="mudarPagina('manutencao')">Manutenção</button>
   <button onclick="mudarPagina('historico')">Histórico</button>
 </nav>
 
-<!-- REGISTO -->
-<div id="registo">
-  <h2>Registar Toner</h2>
+<!-- DASHBOARD -->
+<div id="dashboard">
+  <div class="cards">
+    <div class="card"><h3 id="totalStock">0</h3><p>Toners</p></div>
+    <div class="card"><h3 id="totalMan">0</h3><p>Manutenções</p></div>
+    <div class="card"><h3 id="pretos">0</h3><p>Pretos</p></div>
+  </div>
+</div>
 
+<!-- REGISTO -->
+<div id="registo" style="display:none">
   <select id="equipamento">
     <option>P3155DN</option>
     <option>TASKalfa_255ci</option>
@@ -40,8 +64,6 @@
     <option>Ilha 1</option>
     <option>Ilha 2</option>
     <option>Ilha 3</option>
-    <option>Ilha 4</option>
-    <option>Ilha 5</option>
   </select>
 
   <select id="cor">
@@ -51,41 +73,27 @@
     <option>Vermelho</option>
   </select>
 
-  <br><br>
-
   <button onclick="registarToner()">Disponível</button>
-  <button onclick="abrirScanner()">📷 Scanner</button>
-
-  <div id="reader"></div>
 </div>
 
 <!-- STOCK -->
 <div id="stock" style="display:none">
-  <h2>Stock</h2>
-
   <input id="pesquisa" onkeyup="filtrarStock()" placeholder="Pesquisar">
-
   <div id="listaStock"></div>
-
-  <button onclick="exportarStock()">Exportar Excel</button>
+  <button onclick="exportarStock()">Exportar</button>
 </div>
 
 <!-- MANUTENÇÃO -->
 <div id="manutencao" style="display:none">
-  <h2>Manutenção</h2>
-
   <input id="equipamentoM" placeholder="Equipamento">
   <input id="localizacaoM" placeholder="Local">
   <input id="descricaoM" placeholder="Descrição">
   <input id="dataM" type="date">
-
   <button onclick="guardarManutencao()">Guardar</button>
 </div>
 
 <!-- HISTÓRICO -->
 <div id="historico" style="display:none">
-  <h2>Histórico</h2>
-
   <table>
     <thead>
       <tr>
@@ -97,8 +105,9 @@
     </thead>
     <tbody id="tabelaManutencao"></tbody>
   </table>
+  <button onclick="exportarManutencoes()">Exportar</button>
+</div>
 
-  <button onclick="exportarManutencoes()">Exportar Excel</button>
 </div>
 
 <script type="module" src="script.js"></script>
