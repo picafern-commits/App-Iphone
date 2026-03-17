@@ -1,97 +1,208 @@
-// 🔥 FIREBASE CONFIG
-const firebaseConfig={apiKey:"XXXX",authDomain:"XXXX",projectId:"XXXX"};
+// 🔥 FIREBASE CONFIG (SUBSTITUI PELOS TEUS DADOS)
+const firebaseConfig = {
+  apiKey: "XXXX",
+  authDomain: "XXXX",
+  projectId: "XXXX",
+};
+
 firebase.initializeApp(firebaseConfig);
-const db=firebase.firestore();
+const db = firebase.firestore();
 
-// NAV
-function mudarPagina(p){
-["registo","stock","manutencao","historico"].forEach(x=>document.getElementById(x).style.display="none");
-document.getElementById(p).style.display="block";
-document.querySelectorAll(".bottom-nav a").forEach(a=>a.classList.remove("active"));
-event.target.classList.add("active");
+
+// 🌙 DARK MODE
+function toggleDark(){
+  document.body.classList.toggle("dark");
+
+  if(document.body.classList.contains("dark")){
+    localStorage.setItem("modo","dark");
+  } else {
+    localStorage.setItem("modo","light");
+  }
 }
 
-// GERAR ID
+// carregar modo ao abrir
+window.onload = () => {
+
+  if(localStorage.getItem("modo")==="dark"){
+    document.body.classList.add("dark");
+  }
+
+  carregarStock();
+  carregarHistorico();
+};
+
+
+// 📱 NAVEGAÇÃO
+function mudarPagina(pagina){
+  const paginas = ["registo","stock","manutencao","historico"];
+
+  paginas.forEach(p => {
+    document.getElementById(p).style.display = "none";
+  });
+
+  document.getElementById(pagina).style.display = "block";
+
+  document.querySelectorAll(".bottom-nav a").forEach(a=>{
+    a.classList.remove("active");
+  });
+
+  event.target.classList.add("active");
+}
+
+
+// 🔢 GERAR ID ÚNICO
 async function gerarID(){
-let snap=await db.collection("toners").get();
-return "TN"+String(snap.size+1).padStart(3,"0");
+  const snapshot = await db.collection("toners").get();
+  const numero = snapshot.size + 1;
+  return "TN" + String(numero).padStart(3,"0");
 }
 
-// MOVIMENTO TONER
+
+// ➕ REGISTO TONER
 async function movimento(tipo){
-let eq=document.getElementById("equipamento").value;
-let loc=document.getElementById("localizacao").value;
-let cor=document.getElementById("cor").value;
-let id=await gerarID();
-await db.collection("toners").add({id,equipamento:eq,localizacao:loc,cor});
-await db.collection("movimentos").add({id,tipo,equipamento:eq,localizacao:loc,cor,data:new Date()});
-alert("✅ Registado com sucesso!");
-carregarStock();
+
+  const equipamento = document.getElementById("equipamento").value;
+  const localizacao = document.getElementById("localizacao").value;
+  const cor = document.getElementById("cor").value;
+
+  const id = await gerarID();
+
+  await db.collection("toners").add({
+    id,
+    equipamento,
+    localizacao,
+    cor,
+    data: new Date()
+  });
+
+  await db.collection("movimentos").add({
+    id,
+    tipo,
+    equipamento,
+    localizacao,
+    cor,
+    data: new Date()
+  });
+
+  alert("✅ Toner registado: " + id);
+
+  carregarStock();
 }
 
-// CARREGAR STOCK
+
+// 📦 CARREGAR STOCK
 function carregarStock(){
-let lista=document.getElementById("listaStock");
-db.collection("toners").get().then(snap=>{
-lista.innerHTML="";
-snap.forEach(doc=>{
-let d=doc.data();
-lista.innerHTML+=`<div>${d.id} - ${d.equipamento} - ${d.cor} - ${d.localizacao}</div>`;
-});
-});
-}
-carregarStock();
+  const lista = document.getElementById("listaStock");
 
-// FILTRAR STOCK
+  db.collection("toners").get().then(snapshot=>{
+    lista.innerHTML = "";
+
+    snapshot.forEach(doc=>{
+      const d = doc.data();
+
+      lista.innerHTML += `
+        <div class="card">
+          <b>${d.id}</b><br>
+          ${d.equipamento}<br>
+          ${d.cor}<br>
+          ${d.localizacao}
+        </div>
+      `;
+    });
+  });
+}
+
+
+// 🔍 PESQUISA STOCK
 function filtrarStock(){
-let filtro=document.getElementById("pesquisa").value.toLowerCase();
-let lista=document.getElementById("listaStock").children;
-Array.from(lista).forEach(div=>{
-div.style.display=div.innerText.toLowerCase().includes(filtro)?"block":"none";
-});
+  const filtro = document.getElementById("pesquisa").value.toLowerCase();
+  const items = document.getElementById("listaStock").children;
 
-// HISTÓRICO MANUTENÇÕES
+  Array.from(items).forEach(el=>{
+    el.style.display = el.innerText.toLowerCase().includes(filtro) ? "block" : "none";
+  });
+}
+
+
+// 🔧 GUARDAR MANUTENÇÃO
 function guardarManutencao(){
-let eq=document.getElementById("equipamentoM").value;
-let loc=document.getElementById("localizacaoM").value;
-let desc=document.getElementById("descricaoM").value;
-let data=document.getElementById("dataM").value;
-db.collection("manutencao").add({equipamento:eq,localizacao:loc,descricao:desc,data:data});
-alert("✅ Manutenção registada!");
-carregarHistorico();
+
+  const equipamento = document.getElementById("equipamentoM").value;
+  const localizacao = document.getElementById("localizacaoM").value;
+  const descricao = document.getElementById("descricaoM").value;
+  const data = document.getElementById("dataM").value;
+
+  db.collection("manutencao").add({
+    equipamento,
+    localizacao,
+    descricao,
+    data
+  });
+
+  alert("✅ Manutenção registada");
+
+  carregarHistorico();
 }
 
+
+// 📜 HISTÓRICO MANUTENÇÃO
 function carregarHistorico(){
-let t=document.getElementById("tabelaManutencao");
-db.collection("manutencao").get().then(snap=>{
-t.innerHTML="";
-snap.forEach(doc=>{
-let d=doc.data();
-t.innerHTML+=`<tr><td>${d.equipamento}</td><td>${d.localizacao}</td><td>${d.descricao}</td><td>${d.data}</td></tr>`;
-});
-});
-}
-carregarHistorico();
 
-// SCANNER
-let scannerAtivo=false;
-let html5QrCode;
-function abrirScanner(){
-const reader=document.getElementById("reader");
-if(!scannerAtivo){
-html5QrCode=new Html5Qrcode("reader");
-html5QrCode.start({facingMode:"environment"},{fps:10,qrbox:250},
-decodedText=>{
-document.getElementById("localizacao").value=decodedText;
-alert("Código lido: "+decodedText);
-html5QrCode.stop();
-scannerAtivo=false;
-reader.innerHTML="";
-});
-scannerAtivo=true;
-}else{
-html5QrCode.stop();
-scannerAtivo=false;
-reader.innerHTML="";
+  const tabela = document.getElementById("tabelaManutencao");
+
+  db.collection("manutencao").get().then(snapshot=>{
+    tabela.innerHTML = "";
+
+    snapshot.forEach(doc=>{
+      const d = doc.data();
+
+      tabela.innerHTML += `
+        <tr>
+          <td>${d.equipamento}</td>
+          <td>${d.localizacao}</td>
+          <td>${d.descricao}</td>
+          <td>${d.data}</td>
+        </tr>
+      `;
+    });
+  });
 }
+
+
+// 📷 SCANNER QR
+let scannerAtivo = false;
+let html5QrCode;
+
+function abrirScanner(){
+
+  const reader = document.getElementById("reader");
+
+  if(!scannerAtivo){
+
+    html5QrCode = new Html5Qrcode("reader");
+
+    html5QrCode.start(
+      { facingMode: "environment" },
+      { fps: 10, qrbox: 250 },
+
+      (decodedText)=>{
+
+        document.getElementById("localizacao").value = decodedText;
+
+        alert("📷 Código lido: " + decodedText);
+
+        html5QrCode.stop();
+        scannerAtivo = false;
+        reader.innerHTML = "";
+      }
+    );
+
+    scannerAtivo = true;
+
+  } else {
+
+    html5QrCode.stop();
+    scannerAtivo = false;
+    reader.innerHTML = "";
+  }
 }
