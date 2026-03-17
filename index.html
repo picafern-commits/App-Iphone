@@ -2,7 +2,7 @@
 <html lang="pt">
 <head>
 <meta charset="UTF-8">
-<title>Toner Manager PRO</title>
+<title>Toner App</title>
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
@@ -10,17 +10,19 @@
 <script src="https://unpkg.com/html5-qrcode"></script>
 
 <style>
+body{font-family:Arial;margin:0;background:#f5f5f5;}
+.dark{background:#111;color:white;}
 
-body{
-  font-family: Arial;
-  margin:0;
-  background:#f5f5f5;
+.container{padding:20px;padding-bottom:80px;}
+
+.card{
+  background:white;
+  padding:10px;
+  margin:10px 0;
+  border-radius:10px;
 }
 
-.dark{
-  background:#111;
-  color:white;
-}
+.dark .card{background:#1e1e1e;}
 
 nav{
   position:fixed;
@@ -34,30 +36,9 @@ nav{
 
 nav button{
   background:none;
-  color:white;
   border:none;
+  color:white;
 }
-
-.container{
-  padding:20px;
-  padding-bottom:80px;
-}
-
-.card{
-  background:white;
-  padding:10px;
-  margin:10px 0;
-  border-radius:10px;
-}
-
-.dark .card{
-  background:#1e1e1e;
-}
-
-table{
-  width:100%;
-}
-
 </style>
 </head>
 
@@ -65,16 +46,10 @@ table{
 
 <div class="container">
 
-<!-- DASHBOARD -->
-<div id="dashboard">
-<h2>Dashboard</h2>
-<div id="stats"></div>
-</div>
-
 <!-- REGISTO -->
-<div id="registo" style="display:none">
+<div id="registo">
 
-<h2>Registar Toner</h2>
+<h2>Registo Toner</h2>
 
 <select id="equipamento">
 <option>P3155DN</option>
@@ -83,20 +58,9 @@ table{
 </select>
 
 <select id="localizacao">
-<option>Ilha 1 - R4B2229805</option>
-<option>Ilha 2 - WD44336210</option>
-<option>Ilha 3 - R4B1395508</option>
-<option>Ilha 4 - R4B1293179</option>
-<option>Ilha 5 - R4B1293180</option>
-<option>Balcão 1 - R4B1293183</option>
-<option>Balcão 2 - R4B1293184</option>
-<option>Dep.Logistica - R4B2230012</option>
-<option>Grandes.Encomendas - R4B1293173</option>
-<option>Devoluções - R4B1395261</option>
-<option>Escritório - RVP0ZZ03770</option>
-<option>Ilha1-VRL - R4B1293169</option>
-<option>Ilha2-VRL - R4B1293174</option>
-<option>Ilha3-VRL - RVP0Z03715</option>
+<option>Ilha 1</option>
+<option>Ilha 2</option>
+<option>Ilha 3</option>
 </select>
 
 <select id="cor">
@@ -119,90 +83,13 @@ table{
 
 <div id="listaStock"></div>
 
-<button onclick="exportarStock()">Exportar Excel</button>
-
-</div>
-
-<!-- MANUTENÇÃO -->
-<div id="manutencao" style="display:none">
-
-<h2>Nova Manutenção</h2>
-
-<select id="equipamentoM"></select>
-<select id="localizacaoM"></select>
-
-<input id="descricaoM" placeholder="Descrição">
-
-<button onclick="guardarManutencao()">Guardar</button>
-
-</div>
-
-<!-- PENDENTES -->
-<div id="historico" style="display:none">
-
-<h2>Manutenções Pedidas</h2>
-
-<table>
-<thead>
-<tr>
-<th>Equipamento</th>
-<th>Local</th>
-<th>Descrição</th>
-<th>Data</th>
-<th>✔</th>
-</tr>
-</thead>
-
-<tbody id="tabelaManutencao"></tbody>
-
-</table>
-
-</div>
-
-<!-- HISTÓRICO COMPLETO -->
-<div id="historicoCompleto" style="display:none">
-
-<h2>Histórico Completo</h2>
-
-<input id="filtroEquip" placeholder="Equipamento">
-<input id="filtroLocal" placeholder="Local">
-
-<select id="filtroEstado">
-<option value="">Todos</option>
-<option value="pendente">Pendentes</option>
-<option value="concluido">Concluídos</option>
-</select>
-
-<button onclick="filtrarHistorico()">Filtrar</button>
-
-<table>
-<thead>
-<tr>
-<th>Equipamento</th>
-<th>Local</th>
-<th>Descrição</th>
-<th>Data</th>
-<th>Estado</th>
-<th>Ação</th>
-</tr>
-</thead>
-
-<tbody id="tabelaCompleta"></tbody>
-
-</table>
-
 </div>
 
 </div>
 
-<!-- NAV -->
 <nav>
-<button onclick="mudarPagina('dashboard')">🏠</button>
 <button onclick="mudarPagina('registo')">➕</button>
 <button onclick="mudarPagina('stock')">📦</button>
-<button onclick="mudarPagina('manutencao')">🔧</button>
-<button onclick="mudarPagina('historico')">⚠️</button>
-<button onclick="mudarPagina('historicoCompleto')">📊</button>
 <button onclick="toggleDark()">🌙</button>
 </nav>
 
