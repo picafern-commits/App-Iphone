@@ -1,140 +1,104 @@
 <!DOCTYPE html>
-<html lang="pt">
+<html>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Toner Manager</title>
+  <meta charset="UTF-8">
+  <title>Gestão Toners</title>
+  <link rel="stylesheet" href="style.css">
 
-<link rel="stylesheet" href="style.css">
+  <!-- XLSX -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
-<!-- SCANNER -->
-<script src="https://unpkg.com/html5-qrcode"></script>
-
-<!-- EXCEL -->
-<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-
+  <!-- QR Scanner -->
+  <script src="https://unpkg.com/html5-qrcode"></script>
 </head>
+
 <body>
 
-<div class="header">
-Toner Manager
-<button onclick="toggleDark()" style="float:right;">🌙</button>
-</div>
+<h1>Gestão de Toners</h1>
 
-<div class="container">
+<button onclick="toggleDark()">🌙 Dark Mode</button>
+
+<!-- MENU -->
+<nav>
+  <button onclick="mudarPagina('registo')">Registo</button>
+  <button onclick="mudarPagina('stock')">Stock</button>
+  <button onclick="mudarPagina('manutencao')">Manutenção</button>
+  <button onclick="mudarPagina('historico')">Histórico</button>
+</nav>
 
 <!-- REGISTO -->
-<div id="registo" class="card">
-<h3>Registo Toners</h3>
+<div id="registo">
+  <h2>Registar Toner</h2>
 
-<select id="equipamento">
-<option>P3155DN</option>
-<option>TASKalfa_255ci</option>
-<option>PA5500x</option>
-</select>
+  <select id="equipamento">
+    <option>P3155DN</option>
+    <option>TASKalfa_255ci</option>
+    <option>PA5500x</option>
+  </select>
 
-<select id="localizacao">
-<option>Ilha 1</option>
-<option>Ilha 2</option>
-<option>Ilha 3</option>
-<option>Ilha 4</option>
-<option>Ilha 5</option>
-<option>Balcão 1</option>
-<option>Balcão 2</option>
-<option>Dep.Logistica</option>
-<option>Grandes.Encomendas</option>
-<option>Devoluções</option>
-<option>Escritório</option>
-<option>Ilha1 VRL</option>
-<option>Ilha2 VRL</option>
-<option>Ilha3 VRL</option>
-</select>
+  <select id="localizacao">
+    <option>Ilha 1</option>
+    <option>Ilha 2</option>
+    <option>Ilha 3</option>
+    <option>Ilha 4</option>
+    <option>Ilha 5</option>
+  </select>
 
-<select id="cor">
-<option>Preto</option>
-<option>Amarelo</option>
-<option>Azul</option>
-<option>Vermelho</option>
-</select>
+  <select id="cor">
+    <option>Preto</option>
+    <option>Amarelo</option>
+    <option>Azul</option>
+    <option>Vermelho</option>
+  </select>
 
-<button onclick="registarToner()">Disponível</button>
-<button onclick="abrirScanner()">📷 Scanner</button>
+  <br><br>
 
-<div id="reader"></div>
+  <button onclick="registarToner()">Disponível</button>
+  <button onclick="abrirScanner()">📷 Scanner</button>
+
+  <div id="reader"></div>
 </div>
 
 <!-- STOCK -->
-<div id="stock" class="card" style="display:none;">
-<h3>Stock Toners</h3>
+<div id="stock" style="display:none">
+  <h2>Stock</h2>
 
-<button onclick="exportarStock()">📥 Exportar Excel</button>
-<input type="text" id="pesquisa" placeholder="Pesquisar..." oninput="filtrarStock()">
+  <input id="pesquisa" onkeyup="filtrarStock()" placeholder="Pesquisar">
 
-<div id="listaStock"></div>
+  <div id="listaStock"></div>
+
+  <button onclick="exportarStock()">Exportar Excel</button>
 </div>
 
 <!-- MANUTENÇÃO -->
-<div id="manutencao" class="card" style="display:none;">
-<h3>Manutenção Impressoras</h3>
+<div id="manutencao" style="display:none">
+  <h2>Manutenção</h2>
 
-<select id="equipamentoM">
-<option>P3155DN</option>
-<option>TASKalfa_255ci</option>
-<option>PA5500x</option>
-</select>
+  <input id="equipamentoM" placeholder="Equipamento">
+  <input id="localizacaoM" placeholder="Local">
+  <input id="descricaoM" placeholder="Descrição">
+  <input id="dataM" type="date">
 
-<select id="localizacaoM">
-<option>Ilha 1</option>
-<option>Ilha 2</option>
-<option>Ilha 3</option>
-<option>Ilha 4</option>
-<option>Ilha 5</option>
-<option>Balcão 1</option>
-<option>Balcão 2</option>
-<option>Dep.Logistica</option>
-<option>Grandes.Encomendas</option>
-<option>Devoluções</option>
-<option>Escritório</option>
-<option>Ilha1 VRL</option>
-<option>Ilha2 VRL</option>
-<option>Ilha3 VRL</option>
-</select>
-
-<textarea id="descricaoM" placeholder="Descrição"></textarea>
-<input type="date" id="dataM">
-
-<button onclick="guardarManutencao()">Guardar</button>
+  <button onclick="guardarManutencao()">Guardar</button>
 </div>
 
 <!-- HISTÓRICO -->
-<div id="historico" class="card" style="display:none;">
-<h3>Histórico Manutenções</h3>
+<div id="historico" style="display:none">
+  <h2>Histórico</h2>
 
-<button onclick="exportarManutencoes()">📥 Exportar Excel</button>
+  <table>
+    <thead>
+      <tr>
+        <th>Equipamento</th>
+        <th>Local</th>
+        <th>Descrição</th>
+        <th>Data</th>
+      </tr>
+    </thead>
+    <tbody id="tabelaManutencao"></tbody>
+  </table>
 
-<table border="1" width="100%">
-<thead>
-<tr>
-<th>Equipamento</th>
-<th>Local</th>
-<th>Descrição</th>
-<th>Data</th>
-</tr>
-</thead>
-
-<tbody id="tabelaManutencao"></tbody>
-</table>
-
-</div>
-
-</div>
-
-<!-- MENU -->
-<div class="bottom-nav">
-<a onclick="mudarPagina('registo')">Registo</a>
-<a onclick="mudarPagina('stock')">Stock</a>
-<a onclick="mudarPagina('manutencao')">Manutenção</a>
-<a onclick="mudarPagina('historico')">Histórico</a>
+  <button onclick="exportarManutencoes()">Exportar Excel</button>
 </div>
 
 <script type="module" src="script.js"></script>
