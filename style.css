@@ -1,83 +1,103 @@
 html, body {
-  margin:0;
-  padding:0;
-  height:100%;
-  background:#f2f2f7;
-  font-family:-apple-system;
+margin:0;
+padding:0;
+background:#f2f2f7;
+font-family:-apple-system;
 }
 
-/* SAFE AREAS */
 body {
-  padding-top: env(safe-area-inset-top);
-  padding-bottom: env(safe-area-inset-bottom);
-}
-
-/* CONTAINER */
-.container {
-  padding:15px;
-  padding-bottom:100px;
-  min-height:100vh;
-  min-height:100dvh;
+padding-top: env(safe-area-inset-top);
+padding-bottom: env(safe-area-inset-bottom);
 }
 
 /* HEADER */
 .header {
-  text-align:center;
-  font-size:20px;
-  font-weight:bold;
-  padding:15px;
+text-align:center;
+font-size:20px;
+font-weight:bold;
+padding:15px;
+position:relative;
+}
+
+.dark-btn {
+position:absolute;
+right:15px;
+top:10px;
+}
+
+/* CONTAINER */
+.container {
+padding:15px;
+padding-bottom:100px;
 }
 
 /* CARD */
 .card {
-  background:white;
-  border-radius:16px;
-  padding:15px;
-  margin-bottom:15px;
-  box-shadow:0 4px 12px rgba(0,0,0,0.08);
+background:white;
+border-radius:16px;
+padding:15px;
+margin-bottom:15px;
+box-shadow:0 4px 10px rgba(0,0,0,0.08);
 }
 
 /* INPUTS */
 select,input,textarea {
-  width:100%;
-  padding:14px;
-  margin-top:10px;
-  border-radius:12px;
-  border:1px solid #ccc;
-  font-size:16px;
+width:100%;
+padding:14px;
+margin-top:10px;
+border-radius:12px;
+border:1px solid #ccc;
+font-size:16px;
 }
 
-/* BOTÕES */
+/* BUTTON */
 button {
-  width:100%;
-  padding:15px;
-  margin-top:10px;
-  border:none;
-  border-radius:12px;
-  background:#007aff;
-  color:white;
-  font-weight:bold;
+width:100%;
+padding:15px;
+margin-top:10px;
+border:none;
+border-radius:12px;
+background:#007aff;
+color:white;
+font-weight:bold;
 }
 
-/* NAVBAR */
+/* NAV */
 .bottom-nav {
-  position:fixed;
-  bottom:0;
-  left:0;
-  right:0;
-
-  display:flex;
-  justify-content:space-around;
-
-  background:white;
-  border-top:1px solid #ddd;
-
-  padding:10px;
-  padding-bottom:calc(10px + env(safe-area-inset-bottom));
+position:fixed;
+bottom:0;
+left:0;
+right:0;
+display:flex;
+justify-content:space-around;
+background:white;
+padding:10px;
+padding-bottom:calc(10px + env(safe-area-inset-bottom));
+border-top:1px solid #ddd;
 }
 
-/* APP LOOK */
-body {
-  -webkit-user-select:none;
-  -webkit-tap-highlight-color:transparent;
+/* DARK MODE */
+body.dark {
+background:#121212;
+color:white;
+}
+
+body.dark .card {
+background:#1e1e1e;
+}
+
+body.dark input,
+body.dark select,
+body.dark textarea {
+background:#2c2c2c;
+color:white;
+border:1px solid #444;
+}
+
+body.dark .bottom-nav {
+background:#1e1e1e;
+}
+
+body.dark button {
+background:#0a84ff;
 }
