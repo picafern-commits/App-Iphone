@@ -1,4 +1,3 @@
-// 🔥 FIREBASE (COLOCA OS TEUS DADOS)
 const firebaseConfig = {
   apiKey: "AIzaSyCSgw4rhBLW5mq4QClulubf6e0hf5lDJbo",
   authDomain: "toner-manager-756c4.firebaseapp.com",
@@ -14,23 +13,27 @@ document.querySelectorAll(".card").forEach(el=>el.style.display="none");
 document.getElementById(p).style.display="block";
 }
 
-// GERAR ID
+// ID
 async function gerarID(){
 let snap = await db.collection("toners").get();
 return "TN" + String(snap.size+1).padStart(3,"0");
 }
 
-// REGISTO TONER
+// REGISTO
 async function registar(){
+
 let eq = equipamento.value;
 let loc = localizacao.value;
-let cor = document.getElementById("cor").value;
+let cor = cor.value;
+let dataRecebimento = dataRecebimento.value;
 
 let id = await gerarID();
 
-await db.collection("toners").add({id,eq,loc,cor});
+await db.collection("toners").add({
+id, eq, loc, cor, dataRecebimento
+});
 
-alert("✅ Toner registado!");
+alert("✅ Registado!");
 carregarStock();
 }
 
@@ -42,30 +45,61 @@ db.collection("toners").get().then(snap=>{
 lista.innerHTML="";
 snap.forEach(doc=>{
 let d = doc.data();
-lista.innerHTML += `<div>${d.id} - ${d.eq} - ${d.cor} - ${d.loc}</div>`;
+
+lista.innerHTML += `
+<div class="card">
+${d.id} - ${d.eq} - ${d.cor}<br>
+📍 ${d.loc}<br>
+📅 ${d.dataRecebimento || "-"}
+<button onclick="removerToner('${doc.id}')" style="background:#ff3b30;">Remover</button>
+</div>`;
 });
 });
 }
 carregarStock();
 
+// REMOVER
+function removerToner(id){
+db.collection("toners").doc(id).delete();
+carregarStock();
+}
+
 // PESQUISA
 function filtrar(){
-let f = document.getElementById("pesquisa").value.toLowerCase();
+let f = pesquisa.value.toLowerCase();
 Array.from(listaStock.children).forEach(el=>{
-el.style.display = el.innerText.toLowerCase().includes(f) ? "block" : "none";
+el.style.display = el.innerText.toLowerCase().includes(f) ? "block":"none";
+});
+}
+
+// EXCEL
+function exportarExcel(){
+
+db.collection("toners").get().then(snapshot=>{
+let csv = "ID,Equipamento,Local,Cor,Data\n";
+
+snapshot.forEach(doc=>{
+let d = doc.data();
+csv += `${d.id},${d.eq},${d.loc},${d.cor},${d.dataRecebimento}\n`;
+});
+
+let blob = new Blob([csv], {type:"text/csv"});
+let a = document.createElement("a");
+a.href = URL.createObjectURL(blob);
+a.download = "stock.csv";
+a.click();
 });
 }
 
 // MANUTENÇÃO
 function guardarManutencao(){
-let eq = equipamentoM.value;
-let loc = localizacaoM.value;
-let desc = descricao.value;
-let data = document.getElementById("data").value;
-
-db.collection("manutencao").add({eq,loc,desc,data});
-
-alert("✅ Guardado!");
+db.collection("manutencao").add({
+eq: equipamentoM.value,
+loc: localizacaoM.value,
+desc: descricao.value,
+data: data.value
+});
+alert("Guardado!");
 carregarHistorico();
 }
 
@@ -84,6 +118,25 @@ t.innerHTML += `<tr><td>${d.eq}</td><td>${d.loc}</td><td>${d.desc}</td><td>${d.d
 carregarHistorico();
 
 // SCANNER
+let scanner;
 function abrirScanner(){
-alert("Scanner pronto 📷 (ativa depois se quiseres)");
+scanner = new Html5Qrcode("reader");
+scanner.start(
+{ facingMode: "environment" },
+{ fps: 10, qrbox: 250 },
+(txt)=>{
+localizacao.value = txt;
+alert("Código: " + txt);
+scanner.stop();
+});
+}
+
+// DARK MODE
+function toggleDark(){
+document.body.classList.toggle("dark");
+localStorage.setItem("dark", document.body.classList.contains("dark"));
+}
+
+if(localStorage.getItem("dark") === "true"){
+document.body.classList.add("dark");
 }
