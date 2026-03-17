@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, orderBy, limit, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 const firebaseConfig = {
@@ -8,37 +8,34 @@ const firebaseConfig = {
   projectId: "toner-manager-756c4"
 };
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
+const firebaseApp = initializeApp(firebaseConfig);
+const db = getFirestore(firebaseApp);
+const auth = getAuth(firebaseApp);
 
 // LOGIN
 window.registarUser = async ()=>{
   await createUserWithEmailAndPassword(auth,
-    email.value,
-    password.value
+    document.getElementById("email").value,
+    document.getElementById("password").value
   );
 };
 
 window.loginUser = async ()=>{
   await signInWithEmailAndPassword(auth,
-    email.value,
-    password.value
+    document.getElementById("email").value,
+    document.getElementById("password").value
   );
 };
 
 // AUTH
 onAuthStateChanged(auth, user=>{
   if(user){
-    loginBox.style.display="none";
-    appUI.style.display="block";
+    document.getElementById("loginBox").style.display="none";
+    document.getElementById("appUI").style.display="block";
 
     mostrarStock();
     mostrarHistorico();
     atualizarDashboard();
-  } else {
-    loginBox.style.display="block";
-    appUI.style.display="none";
   }
 });
 
@@ -55,28 +52,12 @@ window.mudarPagina = (p)=>{
   document.getElementById(p).style.display="block";
 };
 
-// ID
-async function gerarID(){
-  const q = query(collection(db,"stock"), orderBy("id","desc"), limit(1));
-  const snap = await getDocs(q);
-
-  let n = 1;
-  if(!snap.empty){
-    n = parseInt(snap.docs[0].data().id.replace("TN","")) + 1;
-  }
-
-  return "TN"+String(n).padStart(3,"0");
-}
-
-// REGISTO
+// REGISTO TONER
 window.registarToner = async ()=>{
-  let id = await gerarID();
-
   await addDoc(collection(db,"stock"),{
-    id,
-    equipamento: equipamento.value,
-    localizacao: localizacao.value,
-    cor: cor.value
+    equipamento: document.getElementById("equipamento").value,
+    localizacao: document.getElementById("localizacao").value,
+    cor: document.getElementById("cor").value
   });
 
   mostrarStock();
@@ -85,16 +66,16 @@ window.registarToner = async ()=>{
 
 // STOCK
 async function mostrarStock(){
-  listaStock.innerHTML="";
+  const lista = document.getElementById("listaStock");
+  lista.innerHTML="";
 
   const snap = await getDocs(collection(db,"stock"));
 
   snap.forEach(d=>{
     let t = d.data();
 
-    listaStock.innerHTML+=`
+    lista.innerHTML+=`
       <div class="card">
-        ${t.id}<br>
         ${t.equipamento}<br>
         ${t.cor}<br>
         ${t.localizacao}
@@ -113,57 +94,90 @@ window.remover = async (id)=>{
 
 // PESQUISA
 window.filtrarStock = ()=>{
-  let f = pesquisa.value.toLowerCase();
-  Array.from(listaStock.children).forEach(el=>{
+  let f = document.getElementById("pesquisa").value.toLowerCase();
+  let items = document.getElementById("listaStock").children;
+
+  Array.from(items).forEach(el=>{
     el.style.display = el.innerText.toLowerCase().includes(f) ? "block":"none";
   });
 };
 
-// MANUTENÇÃO
+// GUARDAR MANUTENÇÃO
 window.guardarManutencao = async ()=>{
-  let feito = feitoM.checked;
 
-  let data = feito ? new Date().toISOString().split("T")[0] : null;
+  const descricao = document.getElementById("descricaoM").value;
+
+  if(!descricao){
+    alert("Escreve a descrição!");
+    return;
+  }
 
   await addDoc(collection(db,"manutencoes"),{
-    equipamento: equipamentoM.value,
-    localizacao: localizacaoM.value,
-    descricao: descricaoM.value,
-    data,
-    concluido: feito
+    equipamento: document.getElementById("equipamentoM").value,
+    localizacao: document.getElementById("localizacaoM").value,
+    descricao,
+    concluido:false,
+    data:null
   });
 
   mostrarHistorico();
   atualizarDashboard();
 };
 
-// HISTÓRICO
+// HISTÓRICO COM CHECKBOX
 async function mostrarHistorico(){
-  tabelaManutencao.innerHTML="";
+  const tabela = document.getElementById("tabelaManutencao");
+  tabela.innerHTML="";
 
   const snap = await getDocs(collection(db,"manutencoes"));
 
   snap.forEach(d=>{
     let m = d.data();
 
-    tabelaManutencao.innerHTML+=`
-      <tr>
+    tabela.innerHTML+=`
+      <tr style="background:${m.concluido ? '#22c55e20' : '#ef444420'}">
         <td>${m.equipamento}</td>
         <td>${m.localizacao}</td>
         <td>${m.descricao}</td>
         <td>${m.data || "-"}</td>
+        <td>
+          <input type="checkbox"
+            ${m.concluido ? "checked":""}
+            onchange="concluirManutencao('${d.id}', this.checked)">
+        </td>
       </tr>
     `;
   });
 }
+
+// CONCLUIR MANUTENÇÃO
+window.concluirManutencao = async (id, estado)=>{
+
+  let data = estado ? new Date().toISOString().split("T")[0] : null;
+
+  await updateDoc(doc(db,"manutencoes",id),{
+    concluido: estado,
+    data
+  });
+
+  mostrarHistorico();
+  atualizarDashboard();
+};
 
 // DASHBOARD
 async function atualizarDashboard(){
   const s = await getDocs(collection(db,"stock"));
   const m = await getDocs(collection(db,"manutencoes"));
 
-  totalStock.innerText = s.size;
-  totalMan.innerText = m.size;
+  document.getElementById("totalStock").innerText = s.size;
+  document.getElementById("totalMan").innerText = m.size;
+
+  let pendentes = 0;
+  m.forEach(d=>{
+    if(!d.data().concluido) pendentes++;
+  });
+
+  document.getElementById("pendentes").innerText = pendentes;
 }
 
 // EXPORT
