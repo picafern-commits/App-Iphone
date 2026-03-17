@@ -1,99 +1,144 @@
 <!DOCTYPE html>
-<html lang="pt">
+<html>
 <head>
 <meta charset="UTF-8">
-<title>Toner App</title>
+<title>Gestão Toners PRO</title>
 
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
-<script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
-<script src="https://unpkg.com/html5-qrcode"></script>
-
-<style>
-body{font-family:Arial;margin:0;background:#f5f5f5;}
-.dark{background:#111;color:white;}
-
-.container{padding:20px;padding-bottom:80px;}
-
-.card{
-  background:white;
-  padding:10px;
-  margin:10px 0;
-  border-radius:10px;
-}
-
-.dark .card{background:#1e1e1e;}
-
-nav{
-  position:fixed;
-  bottom:0;
-  width:100%;
-  background:#222;
-  display:flex;
-  justify-content:space-around;
-  padding:10px;
-}
-
-nav button{
-  background:none;
-  border:none;
-  color:white;
-}
-</style>
 </head>
 
 <body>
 
-<div class="container">
+<!-- LOGIN -->
+<div id="loginBox">
+  <h2>Login</h2>
+  <input id="email" placeholder="Email">
+  <input id="password" type="password" placeholder="Password">
+  <button onclick="loginUser()">Entrar</button>
+  <button onclick="registarUser()">Criar Conta</button>
+</div>
+
+<!-- APP -->
+<div id="appUI" style="display:none">
+
+<h1>Gestão Toners</h1>
+<button onclick="toggleDark()">🌙</button>
+
+<nav>
+  <button onclick="mudarPagina('dashboard')">Dashboard</button>
+  <button onclick="mudarPagina('registo')">Registo</button>
+  <button onclick="mudarPagina('stock')">Stock</button>
+  <button onclick="mudarPagina('manutencao')">Manutenção</button>
+  <button onclick="mudarPagina('historico')">Histórico</button>
+</nav>
+
+<!-- DASHBOARD -->
+<div id="dashboard">
+  <div class="cards">
+    <div class="card"><h3 id="totalStock">0</h3><p>Toners</p></div>
+    <div class="card"><h3 id="totalMan">0</h3><p>Manutenções</p></div>
+    <div class="card"><h3 id="pendentes">0</h3><p>Pendentes</p></div>
+  </div>
+</div>
 
 <!-- REGISTO -->
-<div id="registo">
-
-<h2>Registo Toner</h2>
+<div id="registo" style="display:none">
 
 <select id="equipamento">
-<option>P3155DN</option>
-<option>TASKalfa_255ci</option>
-<option>PA5500x</option>
+  <option>P3155DN</option>
+  <option>TASKalfa_255ci</option>
+  <option>PA5500x</option>
 </select>
 
 <select id="localizacao">
-<option>Ilha 1</option>
-<option>Ilha 2</option>
-<option>Ilha 3</option>
+  <option>Ilha 1 - R4B2229805</option>
+  <option>Ilha 2 - WD44336210</option>
+  <option>Ilha 3 - R4B1395508</option>
+  <option>Ilha 4 - R4B1293179</option>
+  <option>Ilha 5 - R4B1293180</option>
+  <option>Balcão 1 - R4B1293183</option>
+  <option>Balcão 2 - R4B1293184</option>
+  <option>Dep.Logistica - R4B2230012</option>
+  <option>Grandes.Encomendas - R4B1293173</option>
+  <option>Devoluções - R4B1395261</option>
+  <option>Escritório - RVP0ZZ03770</option>
+  <option>Ilha1-VRL - R4B1293169</option>
+  <option>Ilha2-VRL - R4B1293174</option>
+  <option>Ilha3-VRL - RVP0Z03715</option>
 </select>
 
 <select id="cor">
-<option>Preto</option>
-<option>Cyan</option>
-<option>Magenta</option>
-<option>Amarelo</option>
+  <option>Preto</option>
+  <option>Amarelo</option>
+  <option>Azul</option>
+  <option>Vermelho</option>
 </select>
 
-<button onclick="registarToner()">Guardar</button>
+<button onclick="registarToner()">Disponível</button>
 
 </div>
 
 <!-- STOCK -->
 <div id="stock" style="display:none">
+  <input id="pesquisa" onkeyup="filtrarStock()" placeholder="Pesquisar">
+  <div id="listaStock"></div>
+  <button onclick="exportarStock()">Exportar</button>
+</div>
 
-<h2>Stock</h2>
+<!-- MANUTENÇÃO -->
+<div id="manutencao" style="display:none">
 
-<input id="pesquisa" onkeyup="filtrarStock()" placeholder="Pesquisar">
+<select id="equipamentoM">
+  <option>P3155DN</option>
+  <option>TASKalfa_255ci</option>
+  <option>PA5500x</option>
+</select>
 
-<div id="listaStock"></div>
+<select id="localizacaoM">
+  <option>Ilha 1 - R4B2229805</option>
+  <option>Ilha 2 - WD44336210</option>
+  <option>Ilha 3 - R4B1395508</option>
+  <option>Ilha 4 - R4B1293179</option>
+  <option>Ilha 5 - R4B1293180</option>
+  <option>Balcão 1 - R4B1293183</option>
+  <option>Balcão 2 - R4B1293184</option>
+  <option>Dep.Logistica - R4B2230012</option>
+  <option>Grandes.Encomendas - R4B1293173</option>
+  <option>Devoluções - R4B1395261</option>
+  <option>Escritório - RVP0ZZ03770</option>
+  <option>Ilha1-VRL - R4B1293169</option>
+  <option>Ilha2-VRL - R4B1293174</option>
+  <option>Ilha3-VRL - RVP0Z03715</option>
+</select>
 
+<input id="descricaoM" placeholder="Descrição da manutenção">
+
+<button onclick="guardarManutencao()">Guardar</button>
+
+</div>
+
+<!-- HISTÓRICO -->
+<div id="historico" style="display:none">
+  <table>
+    <thead>
+      <tr>
+        <th>Equipamento</th>
+        <th>Local</th>
+        <th>Descrição</th>
+        <th>Data</th>
+        <th>✔</th>
+      </tr>
+    </thead>
+    <tbody id="tabelaManutencao"></tbody>
+  </table>
+  <button onclick="exportarManutencoes()">Exportar</button>
 </div>
 
 </div>
 
-<nav>
-<button onclick="mudarPagina('registo')">➕</button>
-<button onclick="mudarPagina('stock')">📦</button>
-<button onclick="toggleDark()">🌙</button>
-</nav>
-
-<script type="module" src="app.js"></script>
+<script type="module" src="script.js"></script>
 
 </body>
 </html>
