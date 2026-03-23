@@ -1,67 +1,59 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
+// CONFIG FIREBASE
 const firebaseConfig = {
  apiKey: "AIzaSyCSgw4rhBLW5mq4QClulubf6e0hf5lDJbo",
  authDomain: "toner-manager-756c4.firebaseapp.com",
  projectId: "toner-manager-756c4",
 };
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
 
-// 🔥 GARANTE BOTÕES A FUNCIONAR
-window.onload = () => {
+// ---------------- NAV ----------------
+function mudarPagina(p){
 
-  window.mudarPagina = (p)=>{
-    ["registo","stock","historico"].forEach(x=>{
-      document.getElementById(x).style.display="none";
-    });
+  document.getElementById("registo").style.display="none";
+  document.getElementById("stock").style.display="none";
+  document.getElementById("historico").style.display="none";
 
-    document.getElementById(p).style.display="block";
+  document.getElementById(p).style.display="block";
 
-    if(p==="stock") mostrarStock();
-    if(p==="historico") mostrarHistorico();
-  };
+  if(p==="stock") mostrarStock();
+  if(p==="historico") mostrarHistorico();
+}
 
-  window.toggleDark = ()=>{
-    document.body.classList.toggle("dark");
-  };
+// ---------------- REGISTO ----------------
+async function disponivel(){
 
-  window.disponivel = async ()=>{
-    const eq = document.getElementById("equipamento").value;
-    const loc = document.getElementById("localizacao").value;
-    const cor = document.getElementById("cor").value;
+  const eq = document.getElementById("equipamento").value;
+  const loc = document.getElementById("localizacao").value;
+  const cor = document.getElementById("cor").value;
 
-    if(!eq || !loc || !cor){
-      alert("Preenche todos os campos!");
-      return;
-    }
+  if(!eq || !loc || !cor){
+    alert("Preenche todos os campos!");
+    return;
+  }
 
-    await addDoc(collection(db,"stock"),{
-      equipamento:eq,
-      localizacao:loc,
-      cor:cor,
-      data:new Date().toISOString()
-    });
+  await db.collection("stock").add({
+    equipamento:eq,
+    localizacao:loc,
+    cor:cor,
+    data:new Date().toISOString()
+  });
 
-    alert("Adicionado ao stock!");
+  alert("Adicionado ao stock!");
 
-    equipamento.value="";
-    localizacao.value="";
-    cor.value="";
-  };
+  equipamento.value="";
+  localizacao.value="";
+  cor.value="";
+}
 
-};
-
-// STOCK
+// ---------------- STOCK ----------------
 async function mostrarStock(){
-  const lista = document.getElementById("listaStock");
-  if(!lista) return;
 
+  const lista = document.getElementById("listaStock");
   lista.innerHTML="";
 
-  const snap = await getDocs(collection(db,"stock"));
+  const snap = await db.collection("stock").get();
 
   snap.forEach(d=>{
     const t = d.data();
@@ -80,33 +72,31 @@ async function mostrarStock(){
   });
 }
 
-// USAR TONER
-window.usar = async (id)=>{
-  const ref = doc(db,"stock",id);
-  const snap = await getDoc(ref);
+// ---------------- USAR ----------------
+async function usar(id){
 
-  if(!snap.exists()) return;
+  const ref = db.collection("stock").doc(id);
+  const snap = await ref.get();
 
   const item = snap.data();
 
-  await addDoc(collection(db,"historico"),{
+  await db.collection("historico").add({
     ...item,
     usadoEm:new Date().toISOString()
   });
 
-  await deleteDoc(ref);
+  await ref.delete();
 
   mostrarStock();
-};
+}
 
-// HISTÓRICO
+// ---------------- HISTÓRICO ----------------
 async function mostrarHistorico(){
-  const lista = document.getElementById("listaHistorico");
-  if(!lista) return;
 
+  const lista = document.getElementById("listaHistorico");
   lista.innerHTML="";
 
-  const snap = await getDocs(collection(db,"historico"));
+  const snap = await db.collection("historico").get();
 
   snap.forEach(d=>{
     const t = d.data();
