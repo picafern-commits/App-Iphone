@@ -1,142 +1,130 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
 const firebaseConfig = {
   apiKey: "AIzaSyCSgw4rhBLW5mq4QClulubf6e0hf5lDJbo",
   authDomain: "toner-manager-756c4.firebaseapp.com",
   projectId: "toner-manager-756c4",
 };
 
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
-// NAV
-function mudarPagina(p){
-document.querySelectorAll(".card").forEach(el=>el.style.display="none");
-document.getElementById(p).style.display="block";
+// ----------------
+// NAVEGAÇÃO
+// ----------------
+window.mudarPagina = (p)=>{
+  ["registo","stock","historico"].forEach(x=>{
+    document.getElementById(x).style.display="none";
+  });
+  document.getElementById(p).style.display="block";
+
+  if(p==="stock") mostrarStock();
+  if(p==="historico") mostrarHistorico();
+};
+
+// ----------------
+// VALIDAR + ADICIONAR
+// ----------------
+window.disponivel = async ()=>{
+
+  const eq = equipamento.value;
+  const loc = localizacao.value;
+  const cor = cor.value;
+
+  // 🚨 BLOQUEIO SE NÃO ESTIVER PREENCHIDO
+  if(!eq || !loc || !cor){
+    alert("Preenche todos os campos!");
+    return;
+  }
+
+  await addDoc(collection(db,"stock"),{
+    equipamento:eq,
+    localizacao:loc,
+    cor:cor,
+    data:new Date().toISOString()
+  });
+
+  alert("Adicionado ao stock!");
+
+  // limpar campos
+  equipamento.value="";
+  localizacao.value="";
+  cor.value="";
+};
+
+// ----------------
+// MOSTRAR STOCK
+// ----------------
+async function mostrarStock(){
+
+  const lista = document.getElementById("listaStock");
+  lista.innerHTML="";
+
+  const snap = await getDocs(collection(db,"stock"));
+
+  snap.forEach(d=>{
+    const t = d.data();
+
+    lista.innerHTML += `
+      <div class="card">
+        <input type="checkbox" onchange="usar('${d.id}')">
+        <b>${t.equipamento}</b><br>
+        ${t.cor}<br>
+        ${t.localizacao}
+      </div>
+    `;
+  });
 }
 
-// ID
-async function gerarID(){
-let snap = await db.collection("toners").get();
-return "TN" + String(snap.size+1).padStart(3,"0");
-}
+// ----------------
+// USAR TONER (MOVE PARA HISTÓRICO)
+// ----------------
+window.usar = async (id)=>{
 
-// REGISTO
-async function registar(){
+  const ref = doc(db,"stock",id);
+  const snap = await getDocs(collection(db,"stock"));
 
-let eq = equipamento.value;
-let loc = localizacao.value;
-let cor = cor.value;
-let dataRecebimento = dataRecebimento.value;
+  let item;
 
-let id = await gerarID();
+  snap.forEach(d=>{
+    if(d.id===id){
+      item = d.data();
+    }
+  });
 
-await db.collection("toners").add({
-id, eq, loc, cor, dataRecebimento
-});
+  // adicionar ao histórico
+  await addDoc(collection(db,"historico"),{
+    ...item,
+    usadoEm:new Date().toISOString()
+  });
 
-alert("✅ Registado!");
-carregarStock();
-}
+  // remover do stock
+  await deleteDoc(ref);
 
-// STOCK
-function carregarStock(){
-let lista = document.getElementById("listaStock");
+  mostrarStock();
+};
 
-db.collection("toners").get().then(snap=>{
-lista.innerHTML="";
-snap.forEach(doc=>{
-let d = doc.data();
-
-lista.innerHTML += `
-<div class="card">
-${d.id} - ${d.eq} - ${d.cor}<br>
-📍 ${d.loc}<br>
-📅 ${d.dataRecebimento || "-"}
-<button onclick="removerToner('${doc.id}')" style="background:#ff3b30;">Remover</button>
-</div>`;
-});
-});
-}
-carregarStock();
-
-// REMOVER
-function removerToner(id){
-db.collection("toners").doc(id).delete();
-carregarStock();
-}
-
-// PESQUISA
-function filtrar(){
-let f = pesquisa.value.toLowerCase();
-Array.from(listaStock.children).forEach(el=>{
-el.style.display = el.innerText.toLowerCase().includes(f) ? "block":"none";
-});
-}
-
-// EXCEL
-function exportarExcel(){
-
-db.collection("toners").get().then(snapshot=>{
-let csv = "ID,Equipamento,Local,Cor,Data\n";
-
-snapshot.forEach(doc=>{
-let d = doc.data();
-csv += `${d.id},${d.eq},${d.loc},${d.cor},${d.dataRecebimento}\n`;
-});
-
-let blob = new Blob([csv], {type:"text/csv"});
-let a = document.createElement("a");
-a.href = URL.createObjectURL(blob);
-a.download = "stock.csv";
-a.click();
-});
-}
-
-// MANUTENÇÃO
-function guardarManutencao(){
-db.collection("manutencao").add({
-eq: equipamentoM.value,
-loc: localizacaoM.value,
-desc: descricao.value,
-data: data.value
-});
-alert("Guardado!");
-carregarHistorico();
-}
-
+// ----------------
 // HISTÓRICO
-function carregarHistorico(){
-let t = document.getElementById("tabela");
+// ----------------
+async function mostrarHistorico(){
 
-db.collection("manutencao").get().then(snap=>{
-t.innerHTML="";
-snap.forEach(doc=>{
-let d = doc.data();
-t.innerHTML += `<tr><td>${d.eq}</td><td>${d.loc}</td><td>${d.desc}</td><td>${d.data}</td></tr>`;
-});
-});
-}
-carregarHistorico();
+  const lista = document.getElementById("listaHistorico");
+  lista.innerHTML="";
 
-// SCANNER
-let scanner;
-function abrirScanner(){
-scanner = new Html5Qrcode("reader");
-scanner.start(
-{ facingMode: "environment" },
-{ fps: 10, qrbox: 250 },
-(txt)=>{
-localizacao.value = txt;
-alert("Código: " + txt);
-scanner.stop();
-});
-}
+  const snap = await getDocs(collection(db,"historico"));
 
-// DARK MODE
-function toggleDark(){
-document.body.classList.toggle("dark");
-localStorage.setItem("dark", document.body.classList.contains("dark"));
-}
+  snap.forEach(d=>{
+    const t = d.data();
 
-if(localStorage.getItem("dark") === "true"){
-document.body.classList.add("dark");
+    lista.innerHTML += `
+      <div class="card">
+        <b>${t.equipamento}</b><br>
+        ${t.cor}<br>
+        ${t.localizacao}<br>
+        <small>Usado em: ${t.usadoEm}</small>
+      </div>
+    `;
+  });
 }
