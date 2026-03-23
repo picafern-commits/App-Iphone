@@ -4,94 +4,56 @@
 <meta charset="UTF-8">
 <title>Toner App</title>
 
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<!-- FIREBASE -->
+<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 
 <style>
+body{font-family:-apple-system;margin:0;background:#f2f2f7;}
+.container{padding:20px;padding-bottom:120px;}
 
-body{
-  font-family:-apple-system, BlinkMacSystemFont;
-  margin:0;
-  background:#f2f2f7;
-}
-
-.container{
-  padding:20px;
-  padding-bottom:120px;
-}
-
-h2{
-  font-size:24px;
-}
-
-/* INPUTS */
-select{
+select,button{
   width:100%;
   padding:14px;
-  margin-bottom:12px;
-  border-radius:12px;
-  border:1px solid #ddd;
-  font-size:16px;
+  margin-bottom:10px;
+  border-radius:10px;
+  border:1px solid #ccc;
 }
 
-/* BOTÃO */
-button{
-  width:100%;
-  padding:16px;
-  border:none;
-  border-radius:14px;
-  background:#007AFF;
-  color:white;
-  font-size:16px;
-}
+button{background:#007AFF;color:white;border:none;}
 
-/* CARDS */
 .card{
   background:white;
-  padding:16px;
-  border-radius:18px;
-  margin-bottom:12px;
+  padding:15px;
+  border-radius:15px;
+  margin-bottom:10px;
   display:flex;
   justify-content:space-between;
   align-items:center;
 }
 
-/* CHECKBOX */
-.card input{
-  width:24px;
-  height:24px;
-}
-
-/* NAVBAR */
 nav{
   position:fixed;
   bottom:0;
   width:100%;
-  background:rgba(255,255,255,0.9);
-  backdrop-filter: blur(12px);
+  background:white;
   display:flex;
   justify-content:space-around;
-  padding:14px 0;
-  border-top:1px solid #ddd;
+  padding:12px;
 }
 
 nav button{
   background:none;
   border:none;
-  font-size:24px;
+  font-size:22px;
   color:#999;
-  transition:0.2s;
 }
 
-/* BOTÃO ATIVO */
 nav button.active{
   color:#007AFF;
-  transform:scale(1.2);
 }
-
 </style>
 </head>
 
@@ -99,9 +61,8 @@ nav button.active{
 
 <div class="container">
 
-<!-- REGISTO -->
 <div id="registo">
-<h2>Registo Toner</h2>
+<h2>Registo</h2>
 
 <select id="equipamento">
 <option value="">Equipamento</option>
@@ -114,18 +75,6 @@ nav button.active{
 <option value="">Localização</option>
 <option>Ilha 1 - R4B2229805</option>
 <option>Ilha 2 - WD44336210</option>
-<option>Ilha 3 - R4B1395508</option>
-<option>Ilha 4 - R4B1293179</option>
-<option>Ilha 5 - R4B1293180</option>
-<option>Balcão 1 - R4B1293183</option>
-<option>Balcão 2 - R4B1293184</option>
-<option>Dep.Logistica - R4B2230012</option>
-<option>Grandes.Encomendas - R4B1293173</option>
-<option>Devoluções - R4B1395261</option>
-<option>Escritório - RVP0ZZ03770</option>
-<option>Ilha1-VRL - R4B1293169</option>
-<option>Ilha2-VRL - R4B1293174</option>
-<option>Ilha3-VRL - RVP0Z03715</option>
 </select>
 
 <select id="cor">
@@ -139,13 +88,11 @@ nav button.active{
 <button onclick="disponivel()">Disponível</button>
 </div>
 
-<!-- STOCK -->
 <div id="stock" style="display:none">
 <h2>Stock</h2>
 <div id="listaStock"></div>
 </div>
 
-<!-- HISTÓRICO -->
 <div id="historico" style="display:none">
 <h2>Histórico</h2>
 <div id="listaHistorico"></div>
@@ -153,13 +100,10 @@ nav button.active{
 
 </div>
 
-<!-- NAV -->
 <nav>
-
-<button id="btnRegisto" onclick="mudarPagina('registo', this)">➕</button>
-<button id="btnStock" onclick="mudarPagina('stock', this)">📦</button>
-<button id="btnHistorico" onclick="mudarPagina('historico', this)">📜</button>
-
+<button onclick="mudarPagina('registo', this)">➕</button>
+<button onclick="mudarPagina('stock', this)">📦</button>
+<button onclick="mudarPagina('historico', this)">📜</button>
 </nav>
 
 <script src="app.js"></script>
