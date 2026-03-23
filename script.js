@@ -10,31 +10,32 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// ----------------
-// NAVEGAÇÃO
-// ----------------
+// NAV
 window.mudarPagina = (p)=>{
   ["registo","stock","historico"].forEach(x=>{
     document.getElementById(x).style.display="none";
   });
+
   document.getElementById(p).style.display="block";
 
   if(p==="stock") mostrarStock();
   if(p==="historico") mostrarHistorico();
 };
 
-// ----------------
-// VALIDAR + ADICIONAR
-// ----------------
+// DARK MODE
+window.toggleDark = ()=>{
+  document.body.classList.toggle("dark");
+};
+
+// REGISTO
 window.disponivel = async ()=>{
 
   const eq = equipamento.value;
   const loc = localizacao.value;
   const cor = cor.value;
 
-  // 🚨 BLOQUEIO SE NÃO ESTIVER PREENCHIDO
   if(!eq || !loc || !cor){
-    alert("Preenche todos os campos!");
+    alert("Preenche tudo!");
     return;
   }
 
@@ -47,15 +48,12 @@ window.disponivel = async ()=>{
 
   alert("Adicionado ao stock!");
 
-  // limpar campos
   equipamento.value="";
   localizacao.value="";
   cor.value="";
 };
 
-// ----------------
-// MOSTRAR STOCK
-// ----------------
+// STOCK
 async function mostrarStock(){
 
   const lista = document.getElementById("listaStock");
@@ -68,21 +66,21 @@ async function mostrarStock(){
 
     lista.innerHTML += `
       <div class="card">
+        <div>
+          <b>${t.equipamento}</b><br>
+          ${t.cor}<br>
+          <small>${t.localizacao}</small>
+        </div>
+
         <input type="checkbox" onchange="usar('${d.id}')">
-        <b>${t.equipamento}</b><br>
-        ${t.cor}<br>
-        ${t.localizacao}
       </div>
     `;
   });
 }
 
-// ----------------
-// USAR TONER (MOVE PARA HISTÓRICO)
-// ----------------
+// USAR TONER
 window.usar = async (id)=>{
 
-  const ref = doc(db,"stock",id);
   const snap = await getDocs(collection(db,"stock"));
 
   let item;
@@ -93,21 +91,17 @@ window.usar = async (id)=>{
     }
   });
 
-  // adicionar ao histórico
   await addDoc(collection(db,"historico"),{
     ...item,
     usadoEm:new Date().toISOString()
   });
 
-  // remover do stock
-  await deleteDoc(ref);
+  await deleteDoc(doc(db,"stock",id));
 
   mostrarStock();
 };
 
-// ----------------
 // HISTÓRICO
-// ----------------
 async function mostrarHistorico(){
 
   const lista = document.getElementById("listaHistorico");
@@ -120,11 +114,18 @@ async function mostrarHistorico(){
 
     lista.innerHTML += `
       <div class="card">
-        <b>${t.equipamento}</b><br>
-        ${t.cor}<br>
-        ${t.localizacao}<br>
-        <small>Usado em: ${t.usadoEm}</small>
+        <div>
+          <b>${t.equipamento}</b><br>
+          ${t.cor}<br>
+          <small>${t.localizacao}</small><br>
+          <small>✔ ${new Date(t.usadoEm).toLocaleDateString()}</small>
+        </div>
       </div>
     `;
   });
 }
+
+// INIT
+window.onload = ()=>{
+  mostrarStock();
+};
