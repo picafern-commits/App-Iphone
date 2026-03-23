@@ -5,37 +5,96 @@
 <title>Toner App</title>
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#007AFF">
 
 <style>
-body{font-family:Arial;margin:0;background:#f5f5f5;}
-.dark{background:#111;color:white;}
 
-.container{padding:20px;padding-bottom:80px;}
+body{
+  font-family:-apple-system, BlinkMacSystemFont;
+  margin:0;
+  background:#f2f2f7;
+}
+
+.container{
+  padding:20px;
+  padding-bottom:100px;
+}
+
+h2{
+  font-size:24px;
+  margin-bottom:15px;
+}
+
+select, input{
+  width:100%;
+  padding:14px;
+  margin-bottom:12px;
+  border-radius:12px;
+  border:1px solid #ddd;
+  font-size:16px;
+  background:white;
+}
+
+button{
+  width:100%;
+  padding:16px;
+  border:none;
+  border-radius:14px;
+  background:#007AFF;
+  color:white;
+  font-size:16px;
+  font-weight:600;
+}
 
 .card{
   background:white;
-  padding:10px;
-  margin:10px 0;
-  border-radius:10px;
+  padding:16px;
+  border-radius:18px;
+  margin-bottom:12px;
+  box-shadow:0 4px 12px rgba(0,0,0,0.08);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
 }
 
-.dark .card{background:#1e1e1e;}
+.card input{
+  width:22px;
+  height:22px;
+}
 
 nav{
   position:fixed;
   bottom:0;
   width:100%;
-  background:#222;
+  background:rgba(255,255,255,0.9);
+  backdrop-filter: blur(10px);
   display:flex;
   justify-content:space-around;
-  padding:10px;
+  padding:12px 0;
+  border-top:1px solid #ddd;
 }
 
 nav button{
   background:none;
-  border:none;
+  color:#007AFF;
+  font-size:22px;
+}
+
+.dark{
+  background:#000;
   color:white;
 }
+
+.dark .card{
+  background:#1c1c1e;
+}
+
+.dark select, .dark input{
+  background:#1c1c1e;
+  color:white;
+  border:none;
+}
+
 </style>
 </head>
 
@@ -45,25 +104,24 @@ nav button{
 
 <!-- REGISTO -->
 <div id="registo">
-
 <h2>Registo Toner</h2>
 
 <select id="equipamento">
-<option value="">Escolher Equipamento</option>
+<option value="">Equipamento</option>
 <option>P3155DN</option>
 <option>TASKalfa_255ci</option>
 <option>PA5500x</option>
 </select>
 
 <select id="localizacao">
-<option value="">Escolher Local</option>
+<option value="">Localização</option>
 <option>Ilha 1</option>
 <option>Ilha 2</option>
 <option>Ilha 3</option>
 </select>
 
 <select id="cor">
-<option value="">Escolher Cor</option>
+<option value="">Cor</option>
 <option>Preto</option>
 <option>Cyan</option>
 <option>Magenta</option>
@@ -71,25 +129,18 @@ nav button{
 </select>
 
 <button onclick="disponivel()">Disponível</button>
-
 </div>
 
 <!-- STOCK -->
 <div id="stock" style="display:none">
-
 <h2>Stock</h2>
-
 <div id="listaStock"></div>
-
 </div>
 
 <!-- HISTÓRICO -->
 <div id="historico" style="display:none">
-
 <h2>Histórico</h2>
-
 <div id="listaHistorico"></div>
-
 </div>
 
 </div>
@@ -98,6 +149,7 @@ nav button{
 <button onclick="mudarPagina('registo')">➕</button>
 <button onclick="mudarPagina('stock')">📦</button>
 <button onclick="mudarPagina('historico')">📜</button>
+<button onclick="toggleDark()">🌙</button>
 </nav>
 
 <script type="module" src="app.js"></script>
