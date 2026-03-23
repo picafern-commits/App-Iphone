@@ -1,16 +1,17 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+// ⚠️ METE OS TEUS DADOS REAIS
 const firebaseConfig = {
-  apiKey: "AIzaSyCSgw4rhBLW5mq4QClulubf6e0hf5lDJbo",
-  authDomain: "toner-manager-756c4.firebaseapp.com",
-  projectId: "toner-manager-756c4",
+ apiKey: "AIzaSyCSgw4rhBLW5mq4QClulubf6e0hf5lDJbo",
+ authDomain: "toner-manager-756c4.firebaseapp.com",
+ projectId: "toner-manager-756c4",
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// NAV
+// ---------------- NAV ----------------
 window.mudarPagina = (p)=>{
   ["registo","stock","historico"].forEach(x=>{
     document.getElementById(x).style.display="none";
@@ -22,20 +23,20 @@ window.mudarPagina = (p)=>{
   if(p==="historico") mostrarHistorico();
 };
 
-// DARK MODE
+// ---------------- DARK MODE ----------------
 window.toggleDark = ()=>{
   document.body.classList.toggle("dark");
 };
 
-// REGISTO
+// ---------------- REGISTO ----------------
 window.disponivel = async ()=>{
 
-  const eq = equipamento.value;
-  const loc = localizacao.value;
-  const cor = cor.value;
+  const eq = document.getElementById("equipamento").value;
+  const loc = document.getElementById("localizacao").value;
+  const cor = document.getElementById("cor").value;
 
   if(!eq || !loc || !cor){
-    alert("Preenche tudo!");
+    alert("Preenche todos os campos!");
     return;
   }
 
@@ -48,12 +49,12 @@ window.disponivel = async ()=>{
 
   alert("Adicionado ao stock!");
 
-  equipamento.value="";
-  localizacao.value="";
-  cor.value="";
+  document.getElementById("equipamento").value="";
+  document.getElementById("localizacao").value="";
+  document.getElementById("cor").value="";
 };
 
-// STOCK
+// ---------------- STOCK ----------------
 async function mostrarStock(){
 
   const lista = document.getElementById("listaStock");
@@ -78,30 +79,27 @@ async function mostrarStock(){
   });
 }
 
-// USAR TONER
+// ---------------- USAR TONER ----------------
 window.usar = async (id)=>{
 
-  const snap = await getDocs(collection(db,"stock"));
+  const ref = doc(db,"stock",id);
+  const snap = await getDoc(ref);
 
-  let item;
+  if(!snap.exists()) return;
 
-  snap.forEach(d=>{
-    if(d.id===id){
-      item = d.data();
-    }
-  });
+  const item = snap.data();
 
   await addDoc(collection(db,"historico"),{
     ...item,
     usadoEm:new Date().toISOString()
   });
 
-  await deleteDoc(doc(db,"stock",id));
+  await deleteDoc(ref);
 
   mostrarStock();
 };
 
-// HISTÓRICO
+// ---------------- HISTÓRICO ----------------
 async function mostrarHistorico(){
 
   const lista = document.getElementById("listaHistorico");
