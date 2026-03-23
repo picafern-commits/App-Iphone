@@ -9,7 +9,7 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 // ---------------- NAV ----------------
-function mudarPagina(p){
+function mudarPagina(p, btn){
 
   document.getElementById("registo").style.display="none";
   document.getElementById("stock").style.display="none";
@@ -17,16 +17,28 @@ function mudarPagina(p){
 
   document.getElementById(p).style.display="block";
 
+  // botão ativo
+  document.querySelectorAll("nav button").forEach(b=>{
+    b.classList.remove("active");
+  });
+
+  if(btn) btn.classList.add("active");
+
   if(p==="stock") mostrarStock();
   if(p==="historico") mostrarHistorico();
 }
 
+// ---------------- START ----------------
+window.onload = ()=>{
+  document.getElementById("btnRegisto").classList.add("active");
+};
+
 // ---------------- REGISTO ----------------
 async function disponivel(){
 
-  const eq = document.getElementById("equipamento").value;
-  const loc = document.getElementById("localizacao").value;
-  const cor = document.getElementById("cor").value;
+  const eq = equipamento.value;
+  const loc = localizacao.value;
+  const cor = cor.value;
 
   if(!eq || !loc || !cor){
     alert("Preenche todos os campos!");
@@ -40,7 +52,7 @@ async function disponivel(){
     data:new Date().toISOString()
   });
 
-  alert("Adicionado ao stock!");
+  alert("Adicionado!");
 
   equipamento.value="";
   localizacao.value="";
