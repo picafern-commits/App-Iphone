@@ -6,15 +6,21 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<!-- FIREBASE -->
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 
 <style>
+
 body{
   font-family:-apple-system;
   margin:0;
   background:#f2f2f7;
+  transition:0.3s;
+}
+
+.dark{
+  background:#1c1c1e;
+  color:white;
 }
 
 .container{
@@ -22,12 +28,15 @@ body{
   padding-bottom:120px;
 }
 
+/* INPUTS */
 select,input,button{
   width:100%;
   padding:14px;
   margin-bottom:10px;
   border-radius:10px;
   border:1px solid #ccc;
+  font-size:16px;
+  box-sizing:border-box; /* 🔥 evita sair do ecrã */
 }
 
 button{
@@ -36,11 +45,16 @@ button{
   border:none;
 }
 
+/* CARDS */
 .card{
   background:white;
   padding:15px;
   border-radius:15px;
   margin-bottom:10px;
+}
+
+.dark .card{
+  background:#2c2c2e;
 }
 
 .card-top{
@@ -49,103 +63,16 @@ button{
   align-items:center;
 }
 
-.card small{
-  display:block;
-  color:#666;
-  margin-top:4px;
-}
-
-nav{
-  position:fixed;
-  bottom:0;
-  width:100%;
-  background:white;
-  display:flex;
-  justify-content:space-around;
-  padding:12px;
-  border-top:1px solid #ddd;
-}
-
-nav button{
-  background:none;
+.delete{
+  background:red;
+  color:white;
   border:none;
-  font-size:22px;
-  color:#999;
+  border-radius:50%;
+  width:30px;
+  height:30px;
+  font-size:16px;
 }
 
-nav button.active{
-  color:#007AFF;
-}
-</style>
-</head>
-
-<body>
-
-<div class="container">
-
-<!-- REGISTO -->
-<div id="registo">
-<h2>Registo Toner</h2>
-
-<select id="equipamento">
-<option value="">Equipamento</option>
-<option>P3155DN</option>
-<option>TASKalfa_255ci</option>
-<option>PA5500x</option>
-</select>
-
-<select id="localizacao">
-<option value="">Localização</option>
-<option>Ilha 1 - R4B2229805</option>
-<option>Ilha 2 - WD44336210</option>
-<option>Ilha 3 - R4B1395508</option>
-<option>Ilha 4 - R4B1293179</option>
-<option>Ilha 5 - R4B1293180</option>
-<option>Balcão 1 - R4B1293183</option>
-<option>Balcão 2 - R4B1293184</option>
-<option>Dep.Logistica - R4B2230012</option>
-<option>Grandes.Encomendas - R4B1293173</option>
-<option>Devoluções - R4B1395261</option>
-<option>Escritório - RVP0ZZ03770</option>
-<option>Ilha1-VRL - R4B1293169</option>
-<option>Ilha2-VRL - R4B1293174</option>
-<option>Ilha3-VRL - RVP0Z03715</option>
-</select>
-
-<select id="cor">
-<option value="">Cor</option>
-<option>Preto</option>
-<option>Cyan</option>
-<option>Magenta</option>
-<option>Amarelo</option>
-</select>
-
-<input type="date" id="data">
-
-<button onclick="disponivel()">Disponível</button>
-</div>
-
-<!-- STOCK -->
-<div id="stock" style="display:none">
-<h2>Stock</h2>
-<div id="listaStock"></div>
-</div>
-
-<!-- HISTÓRICO -->
-<div id="historico" style="display:none">
-<h2>Histórico</h2>
-<div id="listaHistorico"></div>
-</div>
-
-</div>
-
-<nav>
-<button onclick="mudarPagina('registo', this)">➕</button>
-<button onclick="mudarPagina('stock', this)">📦</button>
-<button onclick="mudarPagina('historico', this)">📜</button>
-</nav>
-
-<script src="app.js"></script>
-
-</body>
-</html>
+/* NAV */
+nav{
+  position
