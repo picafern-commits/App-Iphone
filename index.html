@@ -14,6 +14,14 @@ body{
   font-family:-apple-system;
   margin:0;
   background:#f2f2f7;
+  color:black;
+  transition:0.3s;
+}
+
+/* DARK MODE */
+.dark{
+  background:#1c1c1e;
+  color:white;
 }
 
 .container{
@@ -30,10 +38,23 @@ select,input,button{
   box-sizing:border-box;
 }
 
+/* DARK INPUTS */
+.dark select,
+.dark input{
+  background:#2c2c2e;
+  color:white;
+  border:1px solid #444;
+}
+
 button{
   background:#007AFF;
   color:white;
   border:none;
+}
+
+/* DARK BUTTON */
+.dark button{
+  background:#0a84ff;
 }
 
 .card{
@@ -43,6 +64,12 @@ button{
   margin-bottom:10px;
 }
 
+/* DARK CARD */
+.dark .card{
+  background:#2c2c2e;
+}
+
+/* NAV */
 nav{
   position:fixed;
   bottom:0;
@@ -51,12 +78,23 @@ nav{
   display:flex;
   justify-content:space-around;
   padding:12px;
+  border-top:1px solid #ddd;
+}
+
+/* DARK NAV */
+.dark nav{
+  background:#2c2c2e;
 }
 
 nav button{
   background:none;
   border:none;
   font-size:22px;
+  color:#999;
+}
+
+nav button.active{
+  color:#007AFF;
 }
 </style>
 </head>
@@ -65,6 +103,7 @@ nav button{
 
 <div class="container">
 
+<!-- REGISTO -->
 <div id="registo">
 <h2>Registo</h2>
 
@@ -92,19 +131,22 @@ nav button{
 <button onclick="disponivel()">Disponível</button>
 </div>
 
+<!-- STOCK -->
 <div id="stock" style="display:none">
 <h2>Stock</h2>
 <div id="listaStock"></div>
 </div>
 
+<!-- HISTÓRICO -->
 <div id="historico" style="display:none">
 <h2>Histórico</h2>
 <div id="listaHistorico"></div>
 </div>
 
+<!-- SETTINGS -->
 <div id="settings" style="display:none">
 <h2>Definições</h2>
-<button onclick="toggleDark()">Modo escuro</button>
+<button onclick="toggleDark()">🌙 Alternar modo escuro</button>
 </div>
 
 </div>
