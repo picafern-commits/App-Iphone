@@ -1,17 +1,13 @@
-// 🔥 DEBUG GLOBAL (para ver erros)
-window.onerror = function(msg){
-  alert("Erro: " + msg);
-};
-
-// 🔥 FIREBASE
+// FIREBASE (OS TEUS DADOS)
 const firebaseConfig = {
- apiKey: "AIzaSyCSgw4rhBLW5mq4QClulubf6e0hf5lDJbo",
- authDomain: "toner-manager-756c4.firebaseapp.com",
- projectId: "toner-manager-756c4",
+  apiKey: "AIzaSyCSgw4rhBLW5mq4QClulubf6e0hf5lDJbo",
+  authDomain: "toner-manager-756c4.firebaseapp.com",
+  projectId: "toner-manager-756c4"
 };
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
+
 
 // -------- NAV --------
 function mudarPagina(p){
@@ -27,6 +23,32 @@ function mudarPagina(p){
   if(p==="historico") mostrarHistorico();
 }
 window.mudarPagina = mudarPagina;
+
+
+// -------- DARK MODE --------
+function toggleDark(){
+
+  document.body.classList.toggle("dark");
+
+  if(document.body.classList.contains("dark")){
+    localStorage.setItem("modo","dark");
+  } else {
+    localStorage.setItem("modo","light");
+  }
+}
+window.toggleDark = toggleDark;
+
+
+// -------- START --------
+window.onload = ()=>{
+
+  // aplicar modo guardado
+  if(localStorage.getItem("modo")==="dark"){
+    document.body.classList.add("dark");
+  }
+
+  document.getElementById("registo").style.display="block";
+};
 
 
 // -------- REGISTO --------
@@ -50,6 +72,12 @@ async function disponivel(){
   });
 
   alert("Guardado!");
+
+  // limpar campos
+  document.getElementById("equipamento").value="";
+  document.getElementById("localizacao").value="";
+  document.getElementById("cor").value="";
+  document.getElementById("data").value="";
 }
 window.disponivel = disponivel;
 
@@ -68,8 +96,8 @@ async function mostrarStock(){
     lista.innerHTML+=`
       <div class="card">
         ${t.equipamento} - ${t.cor}<br>
-        ${t.localizacao}<br>
-        ${t.data}
+        📍 ${t.localizacao}<br>
+        📅 ${t.data}
         <input type="checkbox" onchange="usar('${doc.id}')">
       </div>
     `;
@@ -83,7 +111,10 @@ async function usar(id){
   let ref = db.collection("stock").doc(id);
   let snap = await ref.get();
 
-  await db.collection("historico").add(snap.data());
+  await db.collection("historico").add({
+    ...snap.data(),
+    usadoEm: new Date().toISOString()
+  });
 
   await ref.delete();
 
@@ -106,8 +137,9 @@ async function mostrarHistorico(){
     lista.innerHTML+=`
       <div class="card">
         ${t.equipamento} - ${t.cor}<br>
-        ${t.localizacao}<br>
-        ${t.data}
+        📍 ${t.localizacao}<br>
+        📅 ${t.data}<br>
+        ✔ Usado: ${t.usadoEm ? new Date(t.usadoEm).toLocaleDateString() : ""}
         <button onclick="apagar('${doc.id}')">❌</button>
       </div>
     `;
@@ -121,10 +153,3 @@ async function apagar(id){
   mostrarHistorico();
 }
 window.apagar = apagar;
-
-
-// -------- DARK --------
-function toggleDark(){
-  document.body.classList.toggle("dark");
-}
-window.toggleDark = toggleDark;
