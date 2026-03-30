@@ -12,7 +12,7 @@ const db = firebase.firestore();
 // NAV
 window.mudarPagina = function(p, btn){
 
-  ["impressoras","instalacao","config"].forEach(id=>{
+  ["impressoras","config"].forEach(id=>{
     document.getElementById(id).style.display="none";
   });
 
@@ -26,23 +26,19 @@ window.mudarPagina = function(p, btn){
 };
 
 
-// DARK MODE PRO
+// DARK MODE PRO (CORRIGIDO)
 function aplicarDark(estado){
-  if(estado){
-    document.body.classList.add("dark");
-  } else {
-    document.body.classList.remove("dark");
-  }
+  document.body.classList.toggle("dark", estado);
 }
 
 
-// TONERS
+// REGISTAR TONER
 window.disponivel = async function(){
 
   let eq = equipamento.value;
   let loc = localizacao.value;
-  let cor = cor.value;
-  let data = data.value;
+  let cor = document.getElementById("cor").value;
+  let data = document.getElementById("data").value;
 
   if(!eq || !loc || !cor){
     alert("Preenche tudo!");
@@ -58,10 +54,13 @@ window.disponivel = async function(){
 };
 
 
-// STOCK
+// STOCK + SELECT
 db.collection("stock").onSnapshot(snap=>{
   let lista = document.getElementById("listaStock");
+  let select = document.getElementById("selectStock");
+
   lista.innerHTML="";
+  select.innerHTML='<option value="">Selecionar toner do stock</option>';
 
   snap.forEach(doc=>{
     let t = doc.data();
@@ -71,27 +70,33 @@ db.collection("stock").onSnapshot(snap=>{
         ${t.equipamento} - ${t.cor}<br>
         ${t.localizacao}<br>
         ${t.data}
-        <input type="checkbox" onchange="usar('${doc.id}')">
-        <button onclick="apagarStock('${doc.id}')">❌</button>
       </div>
+    `;
+
+    select.innerHTML+=`
+      <option value="${doc.id}">
+        ${t.equipamento} - ${t.cor} (${t.localizacao})
+      </option>
     `;
   });
 });
 
 
-// USAR
-window.usar = async function(id){
+// USAR PELO SELECT
+window.usarSelecionado = async function(){
+
+  let id = document.getElementById("selectStock").value;
+
+  if(!id){
+    alert("Seleciona um toner!");
+    return;
+  }
+
   let ref = db.collection("stock").doc(id);
   let snap = await ref.get();
 
   await db.collection("historico").add(snap.data());
   await ref.delete();
-};
-
-
-// APAGAR
-window.apagarStock = async id=>{
-  await db.collection("stock").doc(id).delete();
 };
 
 
@@ -108,100 +113,32 @@ db.collection("historico").onSnapshot(snap=>{
         ${t.equipamento} - ${t.cor}<br>
         ${t.localizacao}<br>
         ${t.data}
-        <button onclick="apagarHistorico('${doc.id}')">❌</button>
       </div>
     `;
   });
 });
-
-window.apagarHistorico = async id=>{
-  await db.collection("historico").doc(id).delete();
-};
-
-
-// INSTALAÇÃO
-const passos = ["TEAMVIEWER HOST","TEAMS","DNS","Sistema","Domínio","MCFee","Sophos","Office","Impressora","Energia","Apagar User","Criar User"];
-
-function carregarChecklist(){
-  let html="";
-  passos.forEach((p,i)=>{
-    html+=`<div><input type="checkbox" id="p${i}"> ${p}</div>`;
-  });
-  document.getElementById("checklist").innerHTML=html;
-}
-
-
-// GUARDAR PC
-window.guardarInstalacao = async function(){
-
-  let nome = nomePC.value;
-  if(!nome){
-    alert("Nome obrigatório");
-    return;
-  }
-
-  let dados=[];
-  passos.forEach((p,i)=>{
-    dados.push({passo:p,feito:document.getElementById("p"+i).checked});
-  });
-
-  await db.collection("instalacoes").add({
-    nome,
-    passos:dados,
-    data:new Date().toLocaleDateString()
-  });
-};
-
-
-// HISTÓRICO PC
-db.collection("instalacoes").onSnapshot(snap=>{
-  let lista=document.getElementById("listaPC");
-  lista.innerHTML="";
-
-  snap.forEach(doc=>{
-    let d=doc.data();
-
-    let html="";
-    d.passos.forEach(p=>{
-      html+=`<div>${p.feito?"✔":"❌"} ${p.passo}</div>`;
-    });
-
-    lista.innerHTML+=`
-      <div class="card">
-        <b>${d.nome}</b><br>${html}
-        <button onclick="apagarPC('${doc.id}')">❌</button>
-      </div>
-    `;
-  });
-});
-
-window.apagarPC = async id=>{
-  await db.collection("instalacoes").doc(id).delete();
-};
 
 
 // START
 window.onload = ()=>{
 
-  // DARK AUTO
-  let sistemaDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  let modo = localStorage.getItem("modo");
+  let sistema = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  let guardado = localStorage.getItem("modo");
 
-  let ativo = modo ? modo==="dark" : sistemaDark;
+  let ativo = guardado ? guardado==="dark" : sistema;
 
   aplicarDark(ativo);
-  document.getElementById("darkSwitch").checked = ativo;
 
-  document.getElementById("darkSwitch").addEventListener("change", function(){
-    if(this.checked){
-      aplicarDark(true);
-      localStorage.setItem("modo","dark");
-    } else {
-      aplicarDark(false);
-      localStorage.setItem("modo","light");
-    }
-  });
+  let sw = document.getElementById("darkSwitch");
 
-  carregarChecklist();
+  if(sw){
+    sw.checked = ativo;
+
+    sw.addEventListener("change", function(){
+      aplicarDark(this.checked);
+      localStorage.setItem("modo", this.checked ? "dark":"light");
+    });
+  }
+
   document.querySelector("nav button").classList.add("active");
 };
