@@ -8,48 +8,17 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-
 // NAV
-function mudarPagina(p, btn){
-
-  ["registo","stock","historico","settings"].forEach(x=>{
+function mudarPagina(p){
+  ["impressoras","instalacao","historicoPC"].forEach(x=>{
     document.getElementById(x).style.display="none";
   });
-
   document.getElementById(p).style.display="block";
-
-  document.querySelectorAll("nav button").forEach(b=>{
-    b.classList.remove("active");
-  });
-
-  if(btn) btn.classList.add("active");
 }
 window.mudarPagina = mudarPagina;
 
 
-// DARK
-function toggleDark(){
-  document.body.classList.toggle("dark");
-  localStorage.setItem("modo", document.body.classList.contains("dark")?"dark":"light");
-}
-window.toggleDark = toggleDark;
-
-
-// START
-window.onload = ()=>{
-
-  if(localStorage.getItem("modo")==="dark"){
-    document.body.classList.add("dark");
-  }
-
-  document.getElementById("registo").style.display="block";
-
-  mostrarStock();
-  mostrarHistorico();
-};
-
-
-// REGISTO
+// -------- TONERS --------
 async function disponivel(){
 
   let eq = equipamento.value;
@@ -66,21 +35,17 @@ async function disponivel(){
     equipamento:eq,
     localizacao:loc,
     cor:cor,
-    data:data || new Date().toISOString().split("T")[0]
+    data:data
   });
-
-  alert("Guardado!");
 }
 window.disponivel = disponivel;
 
 
-// STOCK (TEMPO REAL)
+// STOCK
 function mostrarStock(){
 
-  const lista = document.getElementById("listaStock");
-
   db.collection("stock").onSnapshot(snapshot=>{
-
+    let lista = document.getElementById("listaStock");
     lista.innerHTML="";
 
     snapshot.forEach(doc=>{
@@ -89,7 +54,140 @@ function mostrarStock(){
       lista.innerHTML+=`
         <div class="card">
           ${t.equipamento} - ${t.cor}
-          <small>📍 ${t.localizacao}</small>
-          <small>📅 ${t.data}</small>
+          <br>${t.localizacao}
+          <br>${t.data}
+          <input type="checkbox" onchange="usar('${doc.id}')">
+        </div>
+      `;
+    });
+  });
+}
 
-          <input type="
+
+// USAR
+async function usar(id){
+  let ref = db.collection("stock").doc(id);
+  let snap = await ref.get();
+
+  await db.collection("historico").add(snap.data());
+  await ref.delete();
+}
+
+
+// HISTÓRICO TONERS
+function mostrarHistorico(){
+  db.collection("historico").onSnapshot(snapshot=>{
+    let lista = document.getElementById("listaHistorico");
+    lista.innerHTML="";
+
+    snapshot.forEach(doc=>{
+      let t = doc.data();
+
+      lista.innerHTML+=`
+        <div class="card">
+          ${t.equipamento} - ${t.cor}
+          <br>${t.localizacao}
+          <br>${t.data}
+        </div>
+      `;
+    });
+  });
+}
+
+
+// -------- INSTALAÇÃO PC --------
+
+const passos = [
+"TEAMVIEWER HOST",
+"TEAMS",
+"DNS (192.168.0.204 & 192.168.0.205)",
+"NOME DO SISTEMA",
+"Atribuir Dominio",
+"Desinstalar MCFee",
+"Instalar Sophos",
+"MICROSOFT 365",
+"Instalar Impressora",
+"Alterar Definições de Energia",
+"Apagar User",
+"Criar novo user"
+];
+
+function carregarChecklist(){
+  let html="";
+
+  passos.forEach((p,i)=>{
+    html+=`
+      <div class="check">
+        <input type="checkbox" id="p${i}">
+        ${p}
+      </div>
+    `;
+  });
+
+  document.getElementById("checklist").innerHTML = html;
+}
+
+
+// GUARDAR PC
+async function guardarInstalacao(){
+
+  let nome = document.getElementById("nomePC").value;
+
+  if(!nome){
+    alert("Nome do PC obrigatório");
+    return;
+  }
+
+  let dados = [];
+
+  passos.forEach((p,i)=>{
+    dados.push({
+      passo:p,
+      feito:document.getElementById("p"+i).checked
+    });
+  });
+
+  await db.collection("instalacoes").add({
+    nome:nome,
+    passos:dados,
+    data:new Date().toLocaleDateString()
+  });
+
+  alert("Guardado!");
+}
+window.guardarInstalacao = guardarInstalacao;
+
+
+// HISTÓRICO PC
+function mostrarHistoricoPC(){
+
+  db.collection("instalacoes").onSnapshot(snapshot=>{
+    let lista = document.getElementById("listaPC");
+    lista.innerHTML="";
+
+    snapshot.forEach(doc=>{
+      let d = doc.data();
+
+      let passosHTML="";
+      d.passos.forEach(p=>{
+        passosHTML += `<small>${p.feito ? "✔" : "❌"} ${p.passo}</small>`;
+      });
+
+      lista.innerHTML+=`
+        <div class="card">
+          <b>${d.nome}</b><br>
+          ${passosHTML}
+        </div>
+      `;
+    });
+  });
+}
+
+
+// START
+window.onload = ()=>{
+  mostrarStock();
+  mostrarHistorico();
+  mostrarHistoricoPC();
+  carregarChecklist();
+};
