@@ -10,10 +10,38 @@
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 
 <style>
-body{
-  font-family:-apple-system;
+html, body{
   margin:0;
+  font-family:-apple-system;
   background:#f2f2f7;
+  overflow-x:hidden;
+  touch-action:pan-y;
+  transition:0.3s;
+}
+
+/* DARK */
+.dark{
+  background:#1c1c1e;
+  color:white;
+}
+
+.dark nav{
+  background:#2c2c2e;
+}
+
+.dark .card{
+  background:#2c2c2e;
+}
+
+.dark select,
+.dark input{
+  background:#2c2c2e;
+  color:white;
+  border:1px solid #444;
+}
+
+.dark button{
+  background:#0A84FF;
 }
 
 .container{
@@ -50,11 +78,48 @@ select,input,button{
   border:1px solid #ccc;
 }
 
+button{
+  background:#007AFF;
+  color:white;
+  border:none;
+}
+
 .card{
   background:white;
   padding:15px;
   border-radius:12px;
   margin-bottom:10px;
+}
+
+/* SWITCH IOS */
+.switch {
+  position: relative;
+  width: 50px;
+  height: 28px;
+}
+.switch input {display:none;}
+
+.slider {
+  position: absolute;
+  background:#ccc;
+  border-radius:34px;
+  top:0;left:0;right:0;bottom:0;
+  transition:.3s;
+}
+.slider:before {
+  content:"";
+  position:absolute;
+  height:22px;width:22px;
+  left:3px;bottom:3px;
+  background:white;
+  border-radius:50%;
+  transition:.3s;
+}
+input:checked + .slider {
+  background:#0A84FF;
+}
+input:checked + .slider:before {
+  transform:translateX(22px);
 }
 </style>
 </head>
@@ -121,6 +186,7 @@ select,input,button{
 
 <!-- INSTALAÇÃO -->
 <div id="instalacao" style="display:none">
+
 <h2>Instalação PC</h2>
 
 <input id="nomePC" placeholder="Nome do Computador">
@@ -136,8 +202,19 @@ select,input,button{
 
 <!-- CONFIG -->
 <div id="config" style="display:none">
+
 <h2>Configurações</h2>
-<button onclick="toggleDark()">🌙 Dark Mode</button>
+
+<div style="display:flex;justify-content:space-between;align-items:center;padding:15px;background:white;border-radius:12px;">
+<span>Modo Escuro</span>
+
+<label class="switch">
+<input type="checkbox" id="darkSwitch">
+<span class="slider"></span>
+</label>
+
+</div>
+
 </div>
 
 </div>
