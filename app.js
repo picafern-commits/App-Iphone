@@ -11,7 +11,6 @@ const db = firebase.firestore();
 
 // NAV
 window.mudarPagina = function(p, btn){
-
   ["impressoras","computadores","config"].forEach(id=>{
     document.getElementById(id).style.display="none";
   });
@@ -26,30 +25,35 @@ window.mudarPagina = function(p, btn){
 };
 
 
-// TONERS
+// TONER
 window.disponivel = async function(){
 
   let eq = equipamento.value;
   let loc = localizacao.value;
-  let cor = cor.value;
-  let data = data.value;
+  let cor = document.getElementById("cor").value;
+  let data = document.getElementById("data").value;
 
   if(!eq || !loc || !cor){
     alert("Preenche tudo!");
     return;
   }
 
-  await db.collection("stock").add({equipamento:eq,localizacao:loc,cor,data});
+  await db.collection("stock").add({
+    equipamento:eq,
+    localizacao:loc,
+    cor:cor,
+    data:data || new Date().toISOString().split("T")[0]
+  });
 };
 
 
-// STOCK
+// STOCK + SELECT
 db.collection("stock").onSnapshot(snap=>{
   let lista = document.getElementById("listaStock");
   let select = document.getElementById("selectStock");
 
   lista.innerHTML="";
-  select.innerHTML="<option value=''>Selecionar</option>";
+  select.innerHTML="<option value=''>Selecionar toner</option>";
 
   snap.forEach(doc=>{
     let t = doc.data();
@@ -71,11 +75,15 @@ db.collection("stock").onSnapshot(snap=>{
 });
 
 
-// USAR
+// USAR TONER
 window.usarSelecionado = async function(){
 
   let id = document.getElementById("selectStock").value;
-  if(!id) return alert("Seleciona um toner");
+
+  if(!id){
+    alert("Seleciona um toner");
+    return;
+  }
 
   let ref = db.collection("stock").doc(id);
   let snap = await ref.get();
@@ -85,7 +93,7 @@ window.usarSelecionado = async function(){
 };
 
 
-// HISTÓRICO + DELETE
+// HISTÓRICO IMPRESSORAS
 db.collection("historico").onSnapshot(snap=>{
   let lista = document.getElementById("listaHistorico");
   lista.innerHTML="";
@@ -110,31 +118,64 @@ window.apagarHistorico = async function(id){
 
 
 // COMPUTADORES
-const passos = ["TEAMVIEWER","TEAMS","DNS","Sistema","Dominio"];
+const passos = [
+"TEAMVIEWER HOST",
+"TEAMS",
+"DNS (192.168.0.204 & 192.168.0.205)",
+"NOME DO SISTEMA",
+"Atribuir Dominio",
+"Desinstalar MCFee",
+"Instalar Sophos",
+"MICROSOFT 365",
+"Instalar Impressora",
+"Alterar Energia",
+"Apagar User",
+"Criar novo user"
+];
 
 function carregarChecklist(){
   let html="";
   passos.forEach((p,i)=>{
-    html+=`<div><input type="checkbox" id="p${i}"> ${p}</div>`;
+    html+=`
+      <div class="card" style="display:flex;justify-content:space-between;">
+        <span>${p}</span>
+        <input type="checkbox" id="p${i}">
+      </div>
+    `;
   });
   document.getElementById("checklist").innerHTML=html;
 }
 
+
+// GUARDAR PC
 window.guardarPC = async function(){
 
-  let nome = nomePC.value;
-  if(!nome) return alert("Nome obrigatório");
+  let nome = document.getElementById("nomePC").value;
+
+  if(!nome){
+    alert("Nome obrigatório");
+    return;
+  }
 
   let dados=[];
   passos.forEach((p,i)=>{
-    dados.push({passo:p,feito:document.getElementById("p"+i).checked});
+    dados.push({
+      passo:p,
+      feito:document.getElementById("p"+i).checked
+    });
   });
 
-  await db.collection("pcs").add({nome,passos:dados});
+  await db.collection("pcs").add({
+    nome:nome,
+    passos:dados,
+    data:new Date().toLocaleDateString()
+  });
+
+  alert("Guardado!");
 };
 
 
-// HISTÓRICO PC
+// HISTÓRICO PCs
 db.collection("pcs").onSnapshot(snap=>{
   let lista=document.getElementById("listaPC");
   lista.innerHTML="";
@@ -147,9 +188,19 @@ db.collection("pcs").onSnapshot(snap=>{
       html+=`<div>${p.feito?"✔":"❌"} ${p.passo}</div>`;
     });
 
-    lista.innerHTML+=`<div class="card">${d.nome}<br>${html}</div>`;
+    lista.innerHTML+=`
+      <div class="card">
+        <b>${d.nome}</b><br>
+        ${html}
+        <button class="delete" onclick="apagarPC('${doc.id}')">❌</button>
+      </div>
+    `;
   });
 });
+
+window.apagarPC = async function(id){
+  await db.collection("pcs").doc(id).delete();
+};
 
 
 // DARK MODE
@@ -159,13 +210,3 @@ window.onload = ()=>{
 
   if(localStorage.getItem("modo")==="dark"){
     document.body.classList.add("dark");
-    sw.checked=true;
-  }
-
-  sw.addEventListener("change", function(){
-    document.body.classList.toggle("dark", this.checked);
-    localStorage.setItem("modo", this.checked?"dark":"light");
-  });
-
-  carregarChecklist();
-};
