@@ -15,7 +15,7 @@ html, body{
   font-family:-apple-system;
   background:#f2f2f7;
   overflow-x:hidden;
-  touch-action:pan-y;
+  min-height:100vh;
 }
 
 /* DARK */
@@ -24,9 +24,17 @@ html, body{
   color:white;
 }
 
-.dark nav{ background:#2c2c2e; }
-.dark .card{ background:#2c2c2e; }
-.dark select,.dark input{
+.dark nav{
+  background:#2c2c2e;
+  border-top:1px solid #444;
+}
+
+.dark .card{
+  background:#2c2c2e;
+}
+
+.dark select,
+.dark input{
   background:#2c2c2e;
   color:white;
   border:1px solid #444;
@@ -34,7 +42,7 @@ html, body{
 
 .container{
   padding:15px;
-  padding-bottom:100px;
+  padding-bottom:120px;
 }
 
 nav{
@@ -45,6 +53,8 @@ nav{
   justify-content:space-around;
   background:white;
   padding:10px;
+  padding-bottom:env(safe-area-inset-bottom);
+  border-top:1px solid #ddd;
 }
 
 nav button{
@@ -53,7 +63,9 @@ nav button{
   font-size:22px;
 }
 
-.active{ color:#007AFF; }
+.active{
+  color:#007AFF;
+}
 
 select,input,button{
   width:100%;
@@ -74,7 +86,6 @@ button{
   margin-bottom:10px;
 }
 
-/* botão apagar */
 .delete{
   background:red;
   margin-top:10px;
@@ -158,6 +169,7 @@ button{
 
 <!-- CONFIG -->
 <div id="config" style="display:none">
+
 <h2>Configurações</h2>
 
 <label>
