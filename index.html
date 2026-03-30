@@ -10,6 +10,8 @@
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 
 <style>
+*{box-sizing:border-box;}
+
 body{
   font-family:-apple-system;
   margin:0;
@@ -17,31 +19,11 @@ body{
 }
 
 .container{
-  padding:15px;
+  padding:16px;
   padding-bottom:120px;
 }
 
-select,input,button{
-  width:100%;
-  padding:14px;
-  margin-bottom:10px;
-  border-radius:10px;
-  border:1px solid #ccc;
-}
-
-button{
-  background:#007AFF;
-  color:white;
-  border:none;
-}
-
-.card{
-  background:white;
-  padding:15px;
-  border-radius:15px;
-  margin-bottom:10px;
-}
-
+/* NAVBAR */
 nav{
   position:fixed;
   bottom:0;
@@ -50,6 +32,34 @@ nav{
   justify-content:space-around;
   background:white;
   padding:10px;
+  border-top:1px solid #ddd;
+}
+
+nav button{
+  background:none;
+  border:none;
+  font-size:22px;
+  color:#999;
+}
+
+nav button.active{
+  color:#007AFF;
+}
+
+/* UI */
+select,input,button{
+  width:100%;
+  padding:14px;
+  margin-bottom:12px;
+  border-radius:12px;
+  border:1px solid #ccc;
+}
+
+.card{
+  background:white;
+  padding:16px;
+  border-radius:16px;
+  margin-bottom:12px;
 }
 
 .check{
@@ -71,30 +81,11 @@ nav{
 <!-- IMPRESSORAS -->
 <div id="impressoras">
 
-<h2>Registo Toners</h2>
+<h2>Impressoras</h2>
 
-<select id="equipamento">
-<option value="">Equipamento</option>
-<option>P3155DN</option>
-<option>TASKalfa_255ci</option>
-<option>PA5500x</option>
-</select>
-
-<select id="localizacao">
-<option value="">Localização</option>
-<option>Ilha 1 - R4B2229805</option>
-<option>Ilha 2 - WD44336210</option>
-<option>Ilha 3 - R4B1395508</option>
-</select>
-
-<select id="cor">
-<option value="">Cor</option>
-<option>Preto</option>
-<option>Cyan</option>
-<option>Magenta</option>
-<option>Amarelo</option>
-</select>
-
+<input id="equipamento" placeholder="Equipamento">
+<input id="localizacao" placeholder="Localização">
+<input id="cor" placeholder="Cor">
 <input type="date" id="data">
 
 <button onclick="disponivel()">Disponível</button>
@@ -112,7 +103,7 @@ nav{
 
 <h2>Instalação Computador</h2>
 
-<input type="text" id="nomePC" placeholder="Nome do Computador">
+<input id="nomePC" placeholder="Nome do Computador">
 
 <div id="checklist"></div>
 
@@ -124,6 +115,7 @@ nav{
 <div id="historicoPC" style="display:none">
 
 <h2>Histórico Instalações</h2>
+
 <div id="listaPC"></div>
 
 </div>
@@ -131,9 +123,9 @@ nav{
 </div>
 
 <nav>
-<button onclick="mudarPagina('impressoras')">🖨️</button>
-<button onclick="mudarPagina('instalacao')">💻</button>
-<button onclick="mudarPagina('historicoPC')">📋</button>
+<button onclick="mudarPagina('impressoras', this)">🖨️</button>
+<button onclick="mudarPagina('instalacao', this)">💻</button>
+<button onclick="mudarPagina('historicoPC', this)">📋</button>
 </nav>
 
 <script src="app.js"></script>
