@@ -1,125 +1,74 @@
-<!DOCTYPE html>
-<html lang="pt">
-<head>
-<meta charset="UTF-8">
-<title>App Empresa</title>
+// FIREBASE
+const firebaseConfig = {
+  apiKey: "AIzaSyCSgw4rhBLW5mq4QClulubf6e0hf5lDJbo",
+  authDomain: "toner-manager-756c4.firebaseapp.com",
+  projectId: "toner-manager-756c4"
+};
 
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
 
-<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 
-<style>
-*{box-sizing:border-box;}
+// NAV FIX
+window.mudarPagina = function(p, btn){
 
-body{
-  font-family:-apple-system;
-  margin:0;
-  background:#f2f2f7;
-}
+  document.getElementById("impressoras").style.display="none";
+  document.getElementById("instalacao").style.display="none";
+  document.getElementById("config").style.display="none";
 
-.container{
-  padding:16px;
-  padding-bottom:120px;
-}
+  document.getElementById(p).style.display="block";
 
-nav{
-  position:fixed;
-  bottom:0;
-  width:100%;
-  display:flex;
-  justify-content:space-around;
-  background:white;
-  padding:10px;
-  border-top:1px solid #ddd;
-}
+  document.querySelectorAll("nav button").forEach(b=>{
+    b.classList.remove("active");
+  });
 
-nav button{
-  background:none;
-  border:none;
-  font-size:22px;
-  color:#999;
-}
+  if(btn) btn.classList.add("active");
+};
 
-nav button.active{
-  color:#007AFF;
-}
 
-select,input,button{
-  width:100%;
-  padding:14px;
-  margin-bottom:12px;
-  border-radius:12px;
-  border:1px solid #ccc;
-}
+// DARK MODE
+window.toggleDark = function(){
+  document.body.classList.toggle("dark");
+};
 
-.card{
-  background:white;
-  padding:16px;
-  border-radius:16px;
-  margin-bottom:12px;
-}
 
-.check{
-  display:flex;
-  align-items:center;
-  margin-bottom:8px;
-}
-.check input{
-  width:auto;
-  margin-right:10px;
-}
-</style>
-</head>
+// TONERS
+window.disponivel = async function(){
 
-<body>
+  let eq = equipamento.value;
+  let loc = localizacao.value;
+  let cor = document.getElementById("cor").value;
+  let data = document.getElementById("data").value;
 
-<div class="container">
+  if(!eq || !loc || !cor){
+    alert("Preenche tudo!");
+    return;
+  }
 
-<!-- IMPRESSORAS -->
-<div id="impressoras">
+  await db.collection("stock").add({equipamento:eq,localizacao:loc,cor:cor,data:data});
+};
 
-<h2>Impressoras</h2>
 
-<input id="equipamento" placeholder="Equipamento">
-<input id="localizacao" placeholder="Localização">
-<input id="cor" placeholder="Cor">
-<input type="date" id="data">
+// STOCK
+db.collection("stock").onSnapshot(snap=>{
+  let lista=document.getElementById("listaStock");
+  lista.innerHTML="";
 
-<button onclick="disponivel()">Disponível</button>
+  snap.forEach(doc=>{
+    let t=doc.data();
 
-<h3>Stock</h3>
-<div id="listaStock"></div>
+    lista.innerHTML+=`
+      <div class="card">
+        ${t.equipamento} - ${t.cor}<br>
+        ${t.localizacao}<br>
+        ${t.data}
+      </div>
+    `;
+  });
+});
 
-<h3>Histórico</h3>
-<div id="listaHistorico"></div>
 
-</div>
-
-<!-- INSTALAÇÃO PC -->
-<div id="instalacao" style="display:none">
-
-<h2>Instalação Computador</h2>
-
-<input id="nomePC" placeholder="Nome do Computador">
-
-<div id="checklist"></div>
-
-<button onclick="guardarInstalacao()">Guardar</button>
-
-<h3>Histórico Instalações</h3>
-<div id="listaPC"></div>
-
-</div>
-
-</div>
-
-<nav>
-<button onclick="mudarPagina('impressoras', this)">🖨️</button>
-<button onclick="mudarPagina('instalacao', this)">💻</button>
-</nav>
-
-<script src="app.js"></script>
-
-</body>
-</html>
+// START
+window.onload = ()=>{
+  document.querySelector("nav button").classList.add("active");
+};
