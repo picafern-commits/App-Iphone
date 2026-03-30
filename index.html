@@ -1,134 +1,213 @@
-<!DOCTYPE html>
-<html lang="pt">
-<head>
-<meta charset="UTF-8">
-<title>App Empresa</title>
+// FIREBASE
+const firebaseConfig = {
+  apiKey: "AIzaSyCSgw4rhBLW5mq4QClulubf6e0hf5lDJbo",
+  authDomain: "toner-manager-756c4.firebaseapp.com",
+  projectId: "toner-manager-756c4"
+};
 
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
 
-<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 
-<style>
-*{box-sizing:border-box;}
+// -------- NAV --------
+function mudarPagina(p, btn){
 
-body{
-  font-family:-apple-system;
-  margin:0;
-  background:#f2f2f7;
+  ["impressoras","instalacao","historicoPC"].forEach(id=>{
+    document.getElementById(id).style.display="none";
+  });
+
+  document.getElementById(p).style.display="block";
+
+  document.querySelectorAll("nav button").forEach(b=>{
+    b.classList.remove("active");
+  });
+
+  if(btn) btn.classList.add("active");
+}
+window.mudarPagina = mudarPagina;
+
+
+// -------- TONERS --------
+async function disponivel(){
+
+  let eq = equipamento.value;
+  let loc = localizacao.value;
+  let cor = document.getElementById("cor").value;
+  let data = document.getElementById("data").value;
+
+  if(!eq || !loc || !cor){
+    alert("Preenche tudo!");
+    return;
+  }
+
+  await db.collection("stock").add({
+    equipamento:eq,
+    localizacao:loc,
+    cor:cor,
+    data:data || new Date().toISOString().split("T")[0]
+  });
+}
+window.disponivel = disponivel;
+
+
+// STOCK (TEMPO REAL)
+function mostrarStock(){
+
+  db.collection("stock").onSnapshot(snap=>{
+
+    let lista = document.getElementById("listaStock");
+    lista.innerHTML="";
+
+    snap.forEach(doc=>{
+      let t = doc.data();
+
+      lista.innerHTML+=`
+        <div class="card">
+          ${t.equipamento} - ${t.cor}<br>
+          📍 ${t.localizacao}<br>
+          📅 ${t.data}
+          <input type="checkbox" onchange="usar('${doc.id}')">
+        </div>
+      `;
+    });
+
+  });
 }
 
-.container{
-  padding:16px;
-  padding-bottom:120px;
+
+// USAR TONER
+async function usar(id){
+
+  let ref = db.collection("stock").doc(id);
+  let snap = await ref.get();
+
+  await db.collection("historico").add(snap.data());
+  await ref.delete();
+}
+window.usar = usar;
+
+
+// HISTÓRICO TONERS
+function mostrarHistorico(){
+
+  db.collection("historico").onSnapshot(snap=>{
+
+    let lista = document.getElementById("listaHistorico");
+    lista.innerHTML="";
+
+    snap.forEach(doc=>{
+      let t = doc.data();
+
+      lista.innerHTML+=`
+        <div class="card">
+          ${t.equipamento} - ${t.cor}<br>
+          📍 ${t.localizacao}<br>
+          📅 ${t.data}
+        </div>
+      `;
+    });
+
+  });
 }
 
-/* NAVBAR */
-nav{
-  position:fixed;
-  bottom:0;
-  width:100%;
-  display:flex;
-  justify-content:space-around;
-  background:white;
-  padding:10px;
-  border-top:1px solid #ddd;
+
+// -------- INSTALAÇÃO PC --------
+const passos = [
+"TEAMVIEWER HOST",
+"TEAMS",
+"DNS (192.168.0.204 & 192.168.0.205)",
+"NOME DO SISTEMA",
+"Atribuir Dominio",
+"Desinstalar MCFee",
+"Instalar Sophos",
+"MICROSOFT 365",
+"Instalar Impressora",
+"Alterar Definições de Energia",
+"Apagar User",
+"Criar novo user"
+];
+
+function carregarChecklist(){
+
+  let html="";
+
+  passos.forEach((p,i)=>{
+    html+=`
+      <div class="check">
+        <input type="checkbox" id="p${i}">
+        ${p}
+      </div>
+    `;
+  });
+
+  document.getElementById("checklist").innerHTML = html;
 }
 
-nav button{
-  background:none;
-  border:none;
-  font-size:22px;
-  color:#999;
+
+// GUARDAR INSTALAÇÃO
+async function guardarInstalacao(){
+
+  let nome = document.getElementById("nomePC").value;
+
+  if(!nome){
+    alert("Nome obrigatório");
+    return;
+  }
+
+  let dados=[];
+
+  passos.forEach((p,i)=>{
+    dados.push({
+      passo:p,
+      feito:document.getElementById("p"+i).checked
+    });
+  });
+
+  await db.collection("instalacoes").add({
+    nome:nome,
+    passos:dados,
+    data:new Date().toLocaleDateString()
+  });
+
+  alert("Instalação guardada!");
+}
+window.guardarInstalacao = guardarInstalacao;
+
+
+// HISTÓRICO PC
+function mostrarHistoricoPC(){
+
+  db.collection("instalacoes").onSnapshot(snap=>{
+
+    let lista = document.getElementById("listaPC");
+    lista.innerHTML="";
+
+    snap.forEach(doc=>{
+      let d = doc.data();
+
+      let passosHTML="";
+      d.passos.forEach(p=>{
+        passosHTML += `<div>${p.feito ? "✔" : "❌"} ${p.passo}</div>`;
+      });
+
+      lista.innerHTML+=`
+        <div class="card">
+          <b>${d.nome}</b><br>
+          ${passosHTML}
+        </div>
+      `;
+    });
+
+  });
 }
 
-nav button.active{
-  color:#007AFF;
-}
 
-/* UI */
-select,input,button{
-  width:100%;
-  padding:14px;
-  margin-bottom:12px;
-  border-radius:12px;
-  border:1px solid #ccc;
-}
+// -------- START --------
+window.onload = ()=>{
+  carregarChecklist();
+  mostrarStock();
+  mostrarHistorico();
+  mostrarHistoricoPC();
 
-.card{
-  background:white;
-  padding:16px;
-  border-radius:16px;
-  margin-bottom:12px;
-}
-
-.check{
-  display:flex;
-  align-items:center;
-  margin-bottom:8px;
-}
-.check input{
-  width:auto;
-  margin-right:10px;
-}
-</style>
-</head>
-
-<body>
-
-<div class="container">
-
-<!-- IMPRESSORAS -->
-<div id="impressoras">
-
-<h2>Impressoras</h2>
-
-<input id="equipamento" placeholder="Equipamento">
-<input id="localizacao" placeholder="Localização">
-<input id="cor" placeholder="Cor">
-<input type="date" id="data">
-
-<button onclick="disponivel()">Disponível</button>
-
-<h3>Stock</h3>
-<div id="listaStock"></div>
-
-<h3>Histórico</h3>
-<div id="listaHistorico"></div>
-
-</div>
-
-<!-- INSTALAÇÃO PC -->
-<div id="instalacao" style="display:none">
-
-<h2>Instalação Computador</h2>
-
-<input id="nomePC" placeholder="Nome do Computador">
-
-<div id="checklist"></div>
-
-<button onclick="guardarInstalacao()">Guardar</button>
-
-</div>
-
-<!-- HISTÓRICO PC -->
-<div id="historicoPC" style="display:none">
-
-<h2>Histórico Instalações</h2>
-
-<div id="listaPC"></div>
-
-</div>
-
-</div>
-
-<nav>
-<button onclick="mudarPagina('impressoras', this)">🖨️</button>
-<button onclick="mudarPagina('instalacao', this)">💻</button>
-<button onclick="mudarPagina('historicoPC', this)">📋</button>
-</nav>
-
-<script src="app.js"></script>
-
-</body>
-</html>
+  document.querySelector("nav button").classList.add("active");
+};
