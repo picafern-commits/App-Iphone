@@ -16,33 +16,20 @@ html, body{
   background:#f2f2f7;
   overflow-x:hidden;
   touch-action:pan-y;
-  overscroll-behavior-x:none;
-  transition:0.3s;
 }
 
-/* DARK MODE */
+/* DARK */
 .dark{
   background:#1c1c1e;
   color:white;
 }
 
-.dark nav{
-  background:#2c2c2e;
-}
-
-.dark .card{
-  background:#2c2c2e;
-}
-
-.dark select,
-.dark input{
+.dark nav{ background:#2c2c2e; }
+.dark .card{ background:#2c2c2e; }
+.dark select,.dark input{
   background:#2c2c2e;
   color:white;
   border:1px solid #444;
-}
-
-.dark button{
-  background:#0A84FF;
 }
 
 .container{
@@ -58,7 +45,6 @@ nav{
   justify-content:space-around;
   background:white;
   padding:10px;
-  border-top:1px solid #ddd;
 }
 
 nav button{
@@ -67,22 +53,18 @@ nav button{
   font-size:22px;
 }
 
-.active{
-  color:#007AFF;
-}
+.active{ color:#007AFF; }
 
 select,input,button{
   width:100%;
   padding:14px;
   margin-bottom:10px;
   border-radius:10px;
-  border:1px solid #ccc;
 }
 
 button{
   background:#007AFF;
   color:white;
-  border:none;
 }
 
 .card{
@@ -92,35 +74,10 @@ button{
   margin-bottom:10px;
 }
 
-/* SWITCH IOS */
-.switch {
-  position: relative;
-  width: 50px;
-  height: 28px;
-}
-.switch input {display:none;}
-
-.slider {
-  position: absolute;
-  background:#ccc;
-  border-radius:34px;
-  top:0;left:0;right:0;bottom:0;
-  transition:.3s;
-}
-.slider:before {
-  content:"";
-  position:absolute;
-  height:22px;width:22px;
-  left:3px;bottom:3px;
-  background:white;
-  border-radius:50%;
-  transition:.3s;
-}
-input:checked + .slider {
-  background:#0A84FF;
-}
-input:checked + .slider:before {
-  transform:translateX(22px);
+/* botão apagar */
+.delete{
+  background:red;
+  margin-top:10px;
 }
 </style>
 </head>
@@ -143,26 +100,20 @@ input:checked + .slider:before {
 
 <select id="localizacao">
 <option value="">Localização</option>
-
 <option>Ilha 1 - R4B2229805</option>
 <option>Ilha 2 - WD44336210</option>
 <option>Ilha 3 - R4B1395508</option>
 <option>Ilha 4 - R4B1293179</option>
 <option>Ilha 5 - R4B1293180</option>
-
 <option>Balcão 1 - R4B1293183</option>
 <option>Balcão 2 - R4B1293184</option>
-
 <option>Dep.Logistica - R4B2230012</option>
 <option>Grandes.Encomendas - R4B1293173</option>
 <option>Devoluções - R4B1395261</option>
-
 <option>Escritório - RVP0ZZ03770</option>
-
 <option>Ilha1-VRL - R4B1293169</option>
 <option>Ilha2-VRL - R4B1293174</option>
 <option>Ilha3-VRL - RVP0Z03715</option>
-
 </select>
 
 <select id="cor">
@@ -178,11 +129,7 @@ input:checked + .slider:before {
 <button onclick="disponivel()">Disponível</button>
 
 <h3>Usar Toner</h3>
-
-<select id="selectStock">
-<option value="">Selecionar toner do stock</option>
-</select>
-
+<select id="selectStock"></select>
 <button onclick="usarSelecionado()">Usado</button>
 
 <h3>Stock</h3>
@@ -193,20 +140,29 @@ input:checked + .slider:before {
 
 </div>
 
-<!-- CONFIG -->
-<div id="config" style="display:none">
+<!-- COMPUTADORES -->
+<div id="computadores" style="display:none">
 
-<h2>Configurações</h2>
+<h2>Instalação Computador</h2>
 
-<div style="display:flex;justify-content:space-between;align-items:center;padding:15px;background:white;border-radius:12px;">
-<span>Modo Escuro</span>
+<input id="nomePC" placeholder="Nome do Computador">
 
-<label class="switch">
-<input type="checkbox" id="darkSwitch">
-<span class="slider"></span>
-</label>
+<div id="checklist"></div>
+
+<button onclick="guardarPC()">Guardar</button>
+
+<h3>Histórico PCs</h3>
+<div id="listaPC"></div>
 
 </div>
+
+<!-- CONFIG -->
+<div id="config" style="display:none">
+<h2>Configurações</h2>
+
+<label>
+<input type="checkbox" id="darkSwitch"> Dark Mode
+</label>
 
 </div>
 
@@ -214,6 +170,7 @@ input:checked + .slider:before {
 
 <nav>
 <button onclick="mudarPagina('impressoras', this)">🖨️</button>
+<button onclick="mudarPagina('computadores', this)">💻</button>
 <button onclick="mudarPagina('config', this)">⚙️</button>
 </nav>
 
