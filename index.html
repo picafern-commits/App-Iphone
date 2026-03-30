@@ -2,49 +2,31 @@
 <html lang="pt">
 <head>
 <meta charset="UTF-8">
-<title>Toner App</title>
+<title>App Empresa</title>
 
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 
 <style>
-*{box-sizing:border-box;}
-
 body{
   font-family:-apple-system;
   margin:0;
   background:#f2f2f7;
-  padding-bottom:100px;
-}
-
-.dark{
-  background:#1c1c1e;
-  color:white;
 }
 
 .container{
-  padding:16px;
+  padding:15px;
+  padding-bottom:120px;
 }
 
 select,input,button{
   width:100%;
   padding:14px;
-  margin-bottom:12px;
-  border-radius:12px;
+  margin-bottom:10px;
+  border-radius:10px;
   border:1px solid #ccc;
-}
-
-#data{
-  max-width:200px;
-}
-
-.dark select,
-.dark input{
-  background:#2c2c2e;
-  color:white;
-  border:1px solid #444;
 }
 
 button{
@@ -55,47 +37,29 @@ button{
 
 .card{
   background:white;
-  padding:16px;
-  border-radius:18px;
-  margin-bottom:12px;
-}
-
-.dark .card{
-  background:#2c2c2e;
+  padding:15px;
+  border-radius:15px;
+  margin-bottom:10px;
 }
 
 nav{
   position:fixed;
   bottom:0;
   width:100%;
-  background:white;
   display:flex;
   justify-content:space-around;
-  padding:12px;
+  background:white;
+  padding:10px;
 }
 
-.dark nav{
-  background:#2c2c2e;
+.check{
+  display:flex;
+  align-items:center;
+  margin-bottom:8px;
 }
-
-nav button{
-  background:none;
-  border:none;
-  font-size:22px;
-  color:#999;
-}
-
-nav button.active{
-  color:#007AFF;
-}
-
-small{
-  display:block;
-  color:#666;
-}
-
-.dark small{
-  color:#aaa;
+.check input{
+  width:auto;
+  margin-right:10px;
 }
 </style>
 </head>
@@ -104,8 +68,10 @@ small{
 
 <div class="container">
 
-<div id="registo">
-<h2>Registo</h2>
+<!-- IMPRESSORAS -->
+<div id="impressoras">
+
+<h2>Registo Toners</h2>
 
 <select id="equipamento">
 <option value="">Equipamento</option>
@@ -116,26 +82,9 @@ small{
 
 <select id="localizacao">
 <option value="">Localização</option>
-
 <option>Ilha 1 - R4B2229805</option>
 <option>Ilha 2 - WD44336210</option>
 <option>Ilha 3 - R4B1395508</option>
-<option>Ilha 4 - R4B1293179</option>
-<option>Ilha 5 - R4B1293180</option>
-
-<option>Balcão 1 - R4B1293183</option>
-<option>Balcão 2 - R4B1293184</option>
-
-<option>Dep.Logistica - R4B2230012</option>
-<option>Grandes.Encomendas - R4B1293173</option>
-<option>Devoluções - R4B1395261</option>
-
-<option>Escritório - RVP0ZZ03770</option>
-
-<option>Ilha1-VRL - R4B1293169</option>
-<option>Ilha2-VRL - R4B1293174</option>
-<option>Ilha3-VRL - RVP0Z03715</option>
-
 </select>
 
 <select id="cor">
@@ -149,30 +98,42 @@ small{
 <input type="date" id="data">
 
 <button onclick="disponivel()">Disponível</button>
-</div>
 
-<div id="stock" style="display:none">
-<h2>Stock</h2>
+<h3>Stock</h3>
 <div id="listaStock"></div>
-</div>
 
-<div id="historico" style="display:none">
-<h2>Histórico</h2>
+<h3>Histórico</h3>
 <div id="listaHistorico"></div>
+
 </div>
 
-<div id="settings" style="display:none">
-<h2>Definições</h2>
-<button onclick="toggleDark()">🌙 Modo escuro</button>
+<!-- INSTALAÇÃO PC -->
+<div id="instalacao" style="display:none">
+
+<h2>Instalação Computador</h2>
+
+<input type="text" id="nomePC" placeholder="Nome do Computador">
+
+<div id="checklist"></div>
+
+<button onclick="guardarInstalacao()">Guardar</button>
+
+</div>
+
+<!-- HISTÓRICO PC -->
+<div id="historicoPC" style="display:none">
+
+<h2>Histórico Instalações</h2>
+<div id="listaPC"></div>
+
 </div>
 
 </div>
 
 <nav>
-<button onclick="mudarPagina('registo', this)">➕</button>
-<button onclick="mudarPagina('stock', this)">📦</button>
-<button onclick="mudarPagina('historico', this)">📜</button>
-<button onclick="mudarPagina('settings', this)">⚙️</button>
+<button onclick="mudarPagina('impressoras')">🖨️</button>
+<button onclick="mudarPagina('instalacao')">💻</button>
+<button onclick="mudarPagina('historicoPC')">📋</button>
 </nav>
 
 <script src="app.js"></script>
