@@ -8,8 +8,6 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-let todosStock = [];
-
 
 // NAV
 window.mudarPagina = function(p){
@@ -19,15 +17,8 @@ window.mudarPagina = function(p){
 };
 
 
-// BOTÃO HOJE
-window.hoje = function(){
-  document.getElementById("data").value = new Date().toISOString().split("T")[0];
-};
-
-
-// 🔥 GERAR ID GLOBAL
+// GERAR ID GLOBAL
 async function gerarID(){
-
   const ref = db.collection("config").doc("contador");
 
   return db.runTransaction(async (t)=>{
@@ -46,7 +37,7 @@ async function gerarID(){
 }
 
 
-// ADICIONAR AO STOCK
+// ADICIONAR
 window.disponivel = async function(){
 
   let eq = document.getElementById("equipamento").value;
@@ -76,50 +67,31 @@ window.disponivel = async function(){
 };
 
 
-// STOCK + SELECT
+// STOCK (COM CHECKBOX)
 db.collection("stock").onSnapshot(snap=>{
-  todosStock = [];
-  let select = document.getElementById("selectStock");
 
   let lista = document.getElementById("listaStock");
-
   lista.innerHTML="";
-  if(select) select.innerHTML="<option value=''>Selecionar toner</option>";
 
   snap.forEach(doc=>{
     let t = doc.data();
-    t.idDoc = doc.id;
-    todosStock.push(t);
 
     lista.innerHTML+=`
       <div class="card">
+        <input type="checkbox" onchange="usar('${doc.id}')">
         <b>${t.idInterno}</b><br>
         ${t.equipamento} - ${t.cor}<br>
         ${t.localizacao}<br>
         ${t.data}
       </div>
     `;
-
-    if(select){
-      select.innerHTML+=`
-        <option value="${doc.id}">
-          ${t.idInterno} - ${t.equipamento}
-        </option>
-      `;
-    }
   });
+
 });
 
 
-// USAR TONER
-window.usarSelecionado = async function(){
-
-  let id = document.getElementById("selectStock").value;
-
-  if(!id){
-    alert("Seleciona um toner!");
-    return;
-  }
+// 🔥 USAR VIA CHECKBOX
+window.usar = async function(id){
 
   let ref = db.collection("stock").doc(id);
   let snap = await ref.get();
@@ -133,13 +105,13 @@ window.usarSelecionado = async function(){
 
 // HISTÓRICO
 db.collection("historico").onSnapshot(snap=>{
-  let div=document.getElementById("listaHistorico");
-  div.innerHTML="";
+  let lista = document.getElementById("listaHistorico");
+  lista.innerHTML="";
 
   snap.forEach(doc=>{
-    let t=doc.data();
+    let t = doc.data();
 
-    div.innerHTML+=`
+    lista.innerHTML+=`
       <div class="card">
         <b>${t.idInterno}</b><br>
         ${t.equipamento} - ${t.cor}<br>
@@ -152,7 +124,7 @@ db.collection("historico").onSnapshot(snap=>{
 });
 
 
-// APAGAR HISTÓRICO
+// APAGAR
 window.apagar = async function(id){
   await db.collection("historico").doc(id).delete();
 };
