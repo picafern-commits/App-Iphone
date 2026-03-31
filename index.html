@@ -10,6 +10,8 @@
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 
 <style>
+*{box-sizing:border-box;}
+
 html, body{
   margin:0;
   font-family:-apple-system;
@@ -17,22 +19,14 @@ html, body{
   overflow-x:hidden;
 }
 
-/* DARK MODE */
+/* DARK */
 .dark{
   background:#1c1c1e;
   color:white;
 }
-
-.dark nav{
-  background:#2c2c2e;
-}
-
-.dark .card{
-  background:#2c2c2e;
-}
-
-.dark select,
-.dark input{
+.dark nav{ background:#2c2c2e; }
+.dark .card{ background:#2c2c2e; }
+.dark input,.dark select{
   background:#2c2c2e;
   color:white;
   border:1px solid #444;
@@ -43,7 +37,6 @@ html, body{
   padding-bottom:120px;
 }
 
-/* NAV */
 nav{
   position:fixed;
   bottom:0;
@@ -52,25 +45,13 @@ nav{
   justify-content:space-around;
   background:white;
   padding:10px;
-  padding-bottom:env(safe-area-inset-bottom);
-  border-top:1px solid #ddd;
-}
-
-nav button{
-  background:none;
-  border:none;
-  font-size:22px;
-}
-
-.active{
-  color:#007AFF;
 }
 
 select,input,button{
   width:100%;
   padding:14px;
   margin-bottom:10px;
-  border-radius:10px;
+  border-radius:12px;
 }
 
 button{
@@ -87,7 +68,6 @@ button{
 
 .delete{
   background:red;
-  margin-top:10px;
 }
 </style>
 </head>
@@ -96,7 +76,6 @@ button{
 
 <div class="container">
 
-<!-- IMPRESSORAS -->
 <div id="impressoras">
 
 <h2>Impressoras</h2>
@@ -110,6 +89,7 @@ button{
 
 <select id="localizacao">
 <option value="">Localização</option>
+<option>Sem Localização</option>
 <option>Ilha 1 - R4B2229805</option>
 <option>Ilha 2 - WD44336210</option>
 <option>Ilha 3 - R4B1395508</option>
@@ -134,13 +114,15 @@ button{
 <option>Azul</option>
 </select>
 
-<input type="date" id="data" style="width:100%;">
+<input type="date" id="data">
+<button onclick="hoje()">Hoje</button>
 
 <button onclick="disponivel()">Adicionar ao Stock</button>
 
-<h3>Usar Toner</h3>
-<select id="selectStock"></select>
-<button onclick="usarSelecionado()">Marcar como Usado</button>
+<h3>Filtro por Localização</h3>
+<select id="filtro" onchange="filtrar()">
+<option value="">Todas</option>
+</select>
 
 <h3>Stock</h3>
 <div id="listaStock"></div>
@@ -150,39 +132,16 @@ button{
 
 </div>
 
-<!-- COMPUTADORES -->
-<div id="computadores" style="display:none">
-
-<h2>Instalação Computador</h2>
-
-<input id="nomePC" placeholder="Nome do Computador" style="width:100%;">
-
-<div id="checklist"></div>
-
-<button onclick="guardarPC()">Guardar Instalação</button>
-
-<h3>Histórico PCs</h3>
-<div id="listaPC"></div>
-
-</div>
-
-<!-- CONFIG -->
 <div id="config" style="display:none">
-
-<h2>Configurações</h2>
-
-<label>
-<input type="checkbox" id="darkSwitch"> Dark Mode
-</label>
-
+<h2>Config</h2>
+<label><input type="checkbox" id="darkSwitch"> Dark Mode</label>
 </div>
 
 </div>
 
 <nav>
-<button onclick="mudarPagina('impressoras', this)">🖨️</button>
-<button onclick="mudarPagina('computadores', this)">💻</button>
-<button onclick="mudarPagina('config', this)">⚙️</button>
+<button onclick="mudarPagina('impressoras')">🖨️</button>
+<button onclick="mudarPagina('config')">⚙️</button>
 </nav>
 
 <script src="app.js"></script>
