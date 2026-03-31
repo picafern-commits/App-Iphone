@@ -8,7 +8,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-let todosStock=[];
+let todosStock = [];
 
 
 // NAV
@@ -25,12 +25,33 @@ window.hoje = function(){
 };
 
 
-// DISPONIVEL
+// 🔥 GERAR ID GLOBAL
+async function gerarID(){
+
+  const ref = db.collection("config").doc("contador");
+
+  return db.runTransaction(async (t)=>{
+    const doc = await t.get(ref);
+
+    let numero = 1;
+
+    if(doc.exists){
+      numero = doc.data().valor + 1;
+    }
+
+    t.set(ref, { valor: numero });
+
+    return "TON-" + String(numero).padStart(4, '0');
+  });
+}
+
+
+// ADICIONAR AO STOCK
 window.disponivel = async function(){
 
-  let eq = equipamento.value;
-  let loc = localizacao.value;
-  let cor = cor.value;
+  let eq = document.getElementById("equipamento").value;
+  let loc = document.getElementById("localizacao").value;
+  let cor = document.getElementById("cor").value;
   let data = document.getElementById("data").value;
 
   if(!loc) loc="Sem Localização";
@@ -41,64 +62,73 @@ window.disponivel = async function(){
     return;
   }
 
-  localStorage.setItem("ultimaLoc", loc);
+  let idGerado = await gerarID();
 
-  await db.collection("stock").add({equipamento:eq,localizacao:loc,cor,data});
+  await db.collection("stock").add({
+    idInterno: idGerado,
+    equipamento: eq,
+    localizacao: loc,
+    cor: cor,
+    data: data
+  });
+
+  alert("Criado: " + idGerado);
 };
 
 
-// STOCK
+// STOCK + SELECT
 db.collection("stock").onSnapshot(snap=>{
-  todosStock=[];
-  let filtroSet=new Set();
+  todosStock = [];
+  let select = document.getElementById("selectStock");
+
+  let lista = document.getElementById("listaStock");
+
+  lista.innerHTML="";
+  if(select) select.innerHTML="<option value=''>Selecionar toner</option>";
 
   snap.forEach(doc=>{
-    let t=doc.data();
-    t.id=doc.id;
+    let t = doc.data();
+    t.idDoc = doc.id;
     todosStock.push(t);
-    filtroSet.add(t.localizacao);
-  });
 
-  atualizarFiltro([...filtroSet]);
-  mostrarStock(todosStock);
-});
-
-
-// FILTRO
-function atualizarFiltro(lista){
-  let f=document.getElementById("filtro");
-  f.innerHTML="<option value=''>Todas</option>";
-  lista.forEach(l=>{
-    f.innerHTML+=`<option>${l}</option>`;
-  });
-}
-
-window.filtrar = function(){
-  let val=document.getElementById("filtro").value;
-
-  if(!val){
-    mostrarStock(todosStock);
-  }else{
-    mostrarStock(todosStock.filter(t=>t.localizacao===val));
-  }
-};
-
-
-// MOSTRAR STOCK
-function mostrarStock(lista){
-  let div=document.getElementById("listaStock");
-  div.innerHTML="";
-
-  lista.forEach(t=>{
-    div.innerHTML+=`
+    lista.innerHTML+=`
       <div class="card">
+        <b>${t.idInterno}</b><br>
         ${t.equipamento} - ${t.cor}<br>
         ${t.localizacao}<br>
         ${t.data}
       </div>
     `;
+
+    if(select){
+      select.innerHTML+=`
+        <option value="${doc.id}">
+          ${t.idInterno} - ${t.equipamento}
+        </option>
+      `;
+    }
   });
-}
+});
+
+
+// USAR TONER
+window.usarSelecionado = async function(){
+
+  let id = document.getElementById("selectStock").value;
+
+  if(!id){
+    alert("Seleciona um toner!");
+    return;
+  }
+
+  let ref = db.collection("stock").doc(id);
+  let snap = await ref.get();
+
+  let dados = snap.data();
+
+  await db.collection("historico").add(dados);
+  await ref.delete();
+};
 
 
 // HISTÓRICO
@@ -111,38 +141,38 @@ db.collection("historico").onSnapshot(snap=>{
 
     div.innerHTML+=`
       <div class="card">
-        ${t.equipamento} - ${t.cor}
+        <b>${t.idInterno}</b><br>
+        ${t.equipamento} - ${t.cor}<br>
+        ${t.localizacao}<br>
+        ${t.data}
         <button class="delete" onclick="apagar('${doc.id}')">❌</button>
       </div>
     `;
   });
 });
 
+
+// APAGAR HISTÓRICO
 window.apagar = async function(id){
   await db.collection("historico").doc(id).delete();
 };
 
 
-// DARK MODE + LOCALIZAÇÃO AUTOMÁTICA
+// DARK MODE
 window.onload = ()=>{
 
-  // DARK
   let sw=document.getElementById("darkSwitch");
 
   if(localStorage.getItem("modo")==="dark"){
     document.body.classList.add("dark");
-    sw.checked=true;
+    if(sw) sw.checked=true;
   }
 
-  sw.addEventListener("change",function(){
-    document.body.classList.toggle("dark",this.checked);
-    localStorage.setItem("modo",this.checked?"dark":"light");
-  });
-
-  // LOCALIZAÇÃO AUTOMÁTICA
-  let ultima=localStorage.getItem("ultimaLoc");
-  if(ultima){
-    document.getElementById("localizacao").value=ultima;
+  if(sw){
+    sw.addEventListener("change",function(){
+      document.body.classList.toggle("dark",this.checked);
+      localStorage.setItem("modo",this.checked?"dark":"light");
+    });
   }
 
 };
