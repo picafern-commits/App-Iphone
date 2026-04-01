@@ -2,16 +2,14 @@
 <html lang="pt">
 <head>
 <meta charset="UTF-8">
-<title>App Empresa</title>
-
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<title>Dashboard Empresa</title>
 
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 
 <style>
-*{box-sizing:border-box;}
-
 body{
   margin:0;
   font-family:-apple-system;
@@ -23,15 +21,63 @@ body{
   color:white;
 }
 
-.dark .card{ background:#2c2c2e; }
-.dark input,.dark select{
-  background:#2c2c2e;
-  color:white;
-}
-
 .container{
   padding:15px;
   padding-bottom:120px;
+}
+
+/* DASHBOARD */
+.top{
+  display:flex;
+  gap:10px;
+}
+
+.box{
+  flex:1;
+  padding:15px;
+  border-radius:15px;
+  text-align:center;
+  background:white;
+}
+
+.dark .box{ background:#2c2c2e; }
+
+.big{
+  font-size:24px;
+  font-weight:bold;
+}
+
+input,select,button{
+  width:100%;
+  padding:14px;
+  margin-top:8px;
+  border-radius:12px;
+}
+
+button{
+  background:#007AFF;
+  color:white;
+}
+
+.card{
+  background:white;
+  padding:12px;
+  border-radius:12px;
+  margin-top:10px;
+  transition:0.2s;
+}
+
+.card:active{
+  transform:scale(0.97);
+}
+
+.dark .card{
+  background:#2c2c2e;
+}
+
+.delete{
+  background:red;
+  margin-top:10px;
 }
 
 nav{
@@ -49,30 +95,6 @@ nav button{
   border:none;
   font-size:22px;
 }
-
-select,input,button{
-  width:100%;
-  padding:14px;
-  margin-bottom:10px;
-  border-radius:12px;
-}
-
-button{
-  background:#007AFF;
-  color:white;
-}
-
-.card{
-  background:white;
-  padding:15px;
-  border-radius:12px;
-  margin-bottom:10px;
-}
-
-.delete{
-  background:red;
-  margin-top:10px;
-}
 </style>
 </head>
 
@@ -80,10 +102,26 @@ button{
 
 <div class="container">
 
-<!-- IMPRESSORAS -->
+<!-- DASHBOARD -->
 <div id="impressoras">
 
-<h2>Impressoras</h2>
+<h2>Dashboard Toners</h2>
+
+<div class="top">
+  <div class="box">
+    <div id="countStock" class="big">0</div>
+    <div>Stock</div>
+  </div>
+
+  <div class="box">
+    <div id="countUsados" class="big">0</div>
+    <div>Usados</div>
+  </div>
+</div>
+
+<input id="search" placeholder="Pesquisar ID..." oninput="filtrar()">
+
+<h3>Adicionar</h3>
 
 <select id="equipamento">
 <option value="">Equipamento</option>
@@ -98,6 +136,17 @@ button{
 <option>Ilha 1 - R4B2229805</option>
 <option>Ilha 2 - WD44336210</option>
 <option>Ilha 3 - R4B1395508</option>
+<option>Ilha 4 - R4B1293179</option>
+<option>Ilha 5 - R4B1293180</option>
+<option>Balcão 1 - R4B1293183</option>
+<option>Balcão 2 - R4B1293184</option>
+<option>Dep.Logistica - R4B2230012</option>
+<option>Grandes.Encomendas - R4B1293173</option>
+<option>Devoluções - R4B1395261</option>
+<option>Escritório - RVP0ZZ03770</option>
+<option>Ilha1-VRL - R4B1293169</option>
+<option>Ilha2-VRL - R4B1293174</option>
+<option>Ilha3-VRL - RVP0Z03715</option>
 </select>
 
 <select id="cor">
@@ -109,9 +158,7 @@ button{
 </select>
 
 <input type="date" id="data">
-<button onclick="hoje()">Hoje</button>
-
-<button onclick="disponivel()">Adicionar ao Stock</button>
+<button onclick="disponivel()">Adicionar</button>
 
 <h3>Stock</h3>
 <div id="listaStock"></div>
@@ -121,35 +168,7 @@ button{
 
 </div>
 
-<!-- COMPUTADORES -->
-<div id="computadores" style="display:none">
-
-<h2>Instalação Computador</h2>
-
-<input id="nomePC" placeholder="Nome do Computador">
-
-<div id="checklist"></div>
-
-<button onclick="guardarPC()">Guardar</button>
-
-<h3>Histórico PCs</h3>
-<div id="listaPC"></div>
-
 </div>
-
-<!-- CONFIG -->
-<div id="config" style="display:none">
-<h2>Config</h2>
-<label><input type="checkbox" id="darkSwitch"> Dark Mode</label>
-</div>
-
-</div>
-
-<nav>
-<button onclick="mudarPagina('impressoras')">🖨️</button>
-<button onclick="mudarPagina('computadores')">💻</button>
-<button onclick="mudarPagina('config')">⚙️</button>
-</nav>
 
 <script src="app.js"></script>
 </body>
