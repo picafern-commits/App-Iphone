@@ -5,36 +5,33 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
-<title>App Toners</title>
+<title>App Toners PRO</title>
 
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 
 <style>
 
-/* 🔒 FIXAR APP */
 html, body{
   margin:0;
   padding:0;
-  width:100%;
-  height:100%;
   overflow-x:hidden;
-  overflow-y:auto;
 }
 
 body{
   font-family:-apple-system;
   background:#f2f2f7;
   touch-action: pan-y;
-  overscroll-behavior: none;
 }
 
-/* CONTAINER */
+.dark{
+  background:#1c1c1e;
+  color:white;
+}
+
 .container{
   padding:15px;
   padding-bottom:110px;
-  max-width:100%;
-  overflow-x:hidden;
 }
 
 /* DASHBOARD */
@@ -51,6 +48,8 @@ body{
   text-align:center;
 }
 
+.dark .box{ background:#2c2c2e; }
+
 .big{
   font-size:24px;
   font-weight:bold;
@@ -59,11 +58,15 @@ body{
 /* INPUTS */
 input, select, button{
   width:100%;
-  max-width:100%;
   padding:14px;
   margin-top:10px;
   border-radius:12px;
   border:none;
+}
+
+.dark input, .dark select{
+  background:#2c2c2e;
+  color:white;
 }
 
 /* BOTÃO */
@@ -78,8 +81,16 @@ button{
   padding:12px;
   border-radius:12px;
   margin-top:10px;
-  max-width:100%;
-  word-wrap:break-word;
+}
+
+.dark .card{
+  background:#2c2c2e;
+}
+
+/* DELETE */
+.delete{
+  background:red;
+  margin-top:10px;
 }
 
 /* NAV */
@@ -92,6 +103,8 @@ nav{
   background:white;
   padding:12px;
 }
+
+.dark nav{ background:#1c1c1e; }
 
 nav button{
   background:none;
@@ -123,7 +136,7 @@ nav button{
   </div>
 </div>
 
-<input id="search" placeholder="Pesquisar por localização..." oninput="filtrar()">
+<input id="search" placeholder="Pesquisar..." oninput="filtrar()">
 
 <h3>Adicionar</h3>
 
@@ -140,8 +153,6 @@ nav button{
 <option>Ilha 1</option>
 <option>Ilha 2</option>
 <option>Ilha 3</option>
-<option>Ilha 4</option>
-<option>Ilha 5</option>
 </select>
 
 <select id="cor">
@@ -164,24 +175,20 @@ nav button{
 
 </div>
 
-<!-- COMPUTADORES -->
-<div id="computadores" style="display:none">
-<h2>Computadores</h2>
-<p>Em construção</p>
-</div>
-
 <!-- CONFIG -->
 <div id="config" style="display:none">
 <h2>Configurações</h2>
-<p>Em breve</p>
-</div>
+
+<label>
+<input type="checkbox" id="darkSwitch"> Dark Mode
+</label>
 
 </div>
 
-<!-- NAV FIXA -->
+</div>
+
 <nav>
 <button onclick="mudarPagina('impressoras')">🖨️</button>
-<button onclick="mudarPagina('computadores')">💻</button>
 <button onclick="mudarPagina('config')">⚙️</button>
 </nav>
 
