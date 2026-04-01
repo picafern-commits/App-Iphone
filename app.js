@@ -1,4 +1,3 @@
-// FIREBASE
 const firebaseConfig = {
   apiKey: "AIzaSyCSgw4rhBLW5mq4QClulubf6e0hf5lDJbo",
   authDomain: "toner-manager-756c4.firebaseapp.com",
@@ -13,15 +12,14 @@ let stockGlobal = [];
 
 // NAV
 function mudarPagina(p){
-  ["impressoras","computadores","config"].forEach(id=>{
-    let el = document.getElementById(id);
-    if(el) el.style.display="none";
+  ["impressoras","config"].forEach(id=>{
+    document.getElementById(id).style.display="none";
   });
   document.getElementById(p).style.display="block";
 }
 
 
-// GERAR ID
+// ID
 async function gerarID(){
   const ref = db.collection("config").doc("contador");
 
@@ -34,11 +32,11 @@ async function gerarID(){
 }
 
 
-// ADICIONAR
+// ADD
 async function disponivel(){
 
-  let eq = document.getElementById("equipamento").value;
-  let loc = document.getElementById("localizacao").value;
+  let eq = equipamento.value;
+  let loc = localizacao.value;
   let cor = document.getElementById("cor").value;
   let data = document.getElementById("data").value;
 
@@ -57,6 +55,12 @@ async function disponivel(){
     data:data || "Sem Data",
     created:new Date()
   });
+
+  // limpar campos
+  equipamento.value="";
+  localizacao.value="";
+  cor.value="";
+  data.value="";
 }
 
 
@@ -65,7 +69,11 @@ db.collection("stock").orderBy("created","desc").onSnapshot(snap=>{
 
   stockGlobal = [];
 
-  document.getElementById("countStock").innerText = snap.size;
+  let count = snap.size;
+  let el = document.getElementById("countStock");
+
+  el.innerText = count;
+  el.style.color = count < 5 ? "red" : "green";
 
   let lista = document.getElementById("listaStock");
   lista.innerHTML="";
@@ -103,6 +111,7 @@ db.collection("historico").onSnapshot(snap=>{
         <b>${t.idInterno}</b><br>
         ${t.equipamento} - ${t.cor}<br>
         ${t.localizacao}
+        <button class="delete" onclick="apagar('${doc.id}')">❌</button>
       </div>
     `;
   });
@@ -111,6 +120,9 @@ db.collection("historico").onSnapshot(snap=>{
 
 // USAR
 async function usar(id){
+
+  if(!confirm("Marcar como usado?")) return;
+
   let ref = db.collection("stock").doc(id);
   let snap = await ref.get();
 
@@ -119,7 +131,13 @@ async function usar(id){
 }
 
 
-// FILTRO LOCALIZAÇÃO
+// APAGAR
+async function apagar(id){
+  await db.collection("historico").doc(id).delete();
+}
+
+
+// FILTRO INTELIGENTE
 function filtrar(){
 
   let txt = document.getElementById("search").value.toLowerCase();
@@ -128,7 +146,11 @@ function filtrar(){
   lista.innerHTML="";
 
   stockGlobal
-    .filter(t => (t.localizacao || "").toLowerCase().includes(txt))
+    .filter(t =>
+      (t.localizacao || "").toLowerCase().includes(txt) ||
+      (t.equipamento || "").toLowerCase().includes(txt) ||
+      (t.cor || "").toLowerCase().includes(txt)
+    )
     .forEach(t=>{
       lista.innerHTML+=`
         <div class="card">
@@ -139,3 +161,19 @@ function filtrar(){
       `;
     });
 }
+
+
+// DARK MODE
+window.onload=()=>{
+  let sw=document.getElementById("darkSwitch");
+
+  if(localStorage.getItem("modo")==="dark"){
+    document.body.classList.add("dark");
+    sw.checked=true;
+  }
+
+  sw.addEventListener("change",function(){
+    document.body.classList.toggle("dark",this.checked);
+    localStorage.setItem("modo",this.checked?"dark":"light");
+  });
+};
