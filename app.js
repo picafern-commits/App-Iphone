@@ -9,7 +9,7 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 
-// NAV CORRIGIDA
+// NAV
 window.mudarPagina = function(p){
 
   ["impressoras","computadores","config"].forEach(id=>{
@@ -18,17 +18,22 @@ window.mudarPagina = function(p){
   });
 
   document.getElementById(p).style.display="block";
+
+  // 🔥 força checklist aparecer
+  if(p === "computadores"){
+    carregarChecklist();
+  }
 };
 
 
-// BOTÃO HOJE
+// HOJE
 window.hoje = function(){
   document.getElementById("data").value =
     new Date().toISOString().split("T")[0];
 };
 
 
-// GERAR ID GLOBAL
+// ID GLOBAL
 async function gerarID(){
   const ref = db.collection("config").doc("contador");
 
@@ -47,11 +52,11 @@ async function gerarID(){
 }
 
 
-// ADICIONAR TONER
+// ADICIONAR
 window.disponivel = async function(){
 
-  let eq = document.getElementById("equipamento").value;
-  let loc = document.getElementById("localizacao").value;
+  let eq = equipamento.value;
+  let loc = localizacao.value;
   let cor = document.getElementById("cor").value;
   let data = document.getElementById("data").value;
 
@@ -72,12 +77,10 @@ window.disponivel = async function(){
     cor:cor,
     data:data
   });
-
-  alert("Criado: "+idGerado);
 };
 
 
-// STOCK COM CHECKBOX
+// STOCK
 db.collection("stock").onSnapshot(snap=>{
   let lista=document.getElementById("listaStock");
   lista.innerHTML="";
@@ -98,7 +101,7 @@ db.collection("stock").onSnapshot(snap=>{
 });
 
 
-// USAR TONER
+// USAR
 window.usar = async function(id){
   let ref=db.collection("stock").doc(id);
   let snap=await ref.get();
@@ -128,14 +131,12 @@ db.collection("historico").onSnapshot(snap=>{
   });
 });
 
-
-// APAGAR HISTÓRICO
 window.apagar = async function(id){
   await db.collection("historico").doc(id).delete();
 };
 
 
-// -------- COMPUTADORES --------
+// -------- CHECKLIST --------
 
 const passos=[
 "TEAMVIEWER HOST","TEAMS","DNS",
@@ -146,15 +147,22 @@ const passos=[
 ];
 
 function carregarChecklist(){
+
+  let el = document.getElementById("checklist");
+  if(!el) return;
+
   let html="";
+
   passos.forEach((p,i)=>{
     html+=`
-      <div class="card">
-        <input type="checkbox" id="p${i}"> ${p}
+      <div class="card" style="display:flex;justify-content:space-between;align-items:center;">
+        <span>${p}</span>
+        <input type="checkbox" id="p${i}">
       </div>
     `;
   });
-  document.getElementById("checklist").innerHTML=html;
+
+  el.innerHTML = html;
 }
 
 
@@ -178,11 +186,8 @@ window.guardarPC = async function(){
 
   await db.collection("pcs").add({
     nome:nome,
-    passos:dados,
-    data:new Date().toLocaleDateString()
+    passos:dados
   });
-
-  alert("Guardado!");
 };
 
 
