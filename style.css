@@ -1,546 +1,391 @@
-const firebaseConfig = {
-  apiKey: "AIzaSyCSgw4rhBLW5mq4QClulubf6e0hf5lDJbo",
-  authDomain: "toner-manager-756c4.firebaseapp.com",
-  projectId: "toner-manager-756c4"
-};
-
-if (!firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
-}
-const db = firebase.firestore();
-
-let stockGlobal = [];
-let historicoGlobal = [];
-let pcsGlobal = [];
-let manutencoesGlobal = [];
-
-function mostrarMensagem(texto, tipo = "sucesso") {
-  let toast = document.getElementById("toast");
-
-  if (!toast) {
-    toast = document.createElement("div");
-    toast.id = "toast";
-    toast.className = "toast-app";
-    document.body.appendChild(toast);
-  }
-
-  toast.className = `toast-app ${tipo}`;
-  toast.innerText = texto;
-  toast.style.display = "block";
-
-  clearTimeout(toast._t);
-  toast._t = setTimeout(() => {
-    toast.style.display = "none";
-  }, 2200);
+* {
+  box-sizing: border-box;
 }
 
-function msg(texto, tipo = "sucesso") {
-  mostrarMensagem(texto, tipo);
+:root {
+  --bg: #f3f6fb;
+  --card: #ffffff;
+  --border: #dbe3ee;
+  --text: #111827;
+  --muted: #6b7280;
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+  --danger: #dc2626;
+  --success: #16a34a;
+  --warning: #d97706;
+  --nav: #ffffff;
+  --shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
 }
 
-function mudarPagina(p) {
-  const paginas = [
-    "impressoras",
-    "stockPage",
-    "historicoPage",
-    "computadores",
-    "impressorasLista",
-    "manutencaoImpressoras",
-    "config"
-  ];
-
-  paginas.forEach(id => {
-    const sec = document.getElementById(id);
-    if (sec) sec.style.display = "none";
-  });
-
-  const atual = document.getElementById(p);
-  if (atual) atual.style.display = "block";
-
-  if (p === "computadores") {
-    carregarChecklist();
-  }
+html.dark,
+body.dark {
+  --bg: #0f172a;
+  --card: #111827;
+  --border: #334155;
+  --text: #f1f5f9;
+  --muted: #cbd5e1;
+  --primary: #3b82f6;
+  --primary-hover: #2563eb;
+  --danger: #ef4444;
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --nav: #111827;
+  --shadow: 0 8px 20px rgba(0, 0, 0, 0.22);
 }
 
-const impressorasData = [
-  { modelo: "Kyocera P3155dn", serie: "R4B2229805", armazem: "Braga", localizacao: "Ilha 01", ip: "192.168.10.178" },
-  { modelo: "Ecosys PA5500x", serie: "WD44336210", armazem: "Braga", localizacao: "Ilha 02", ip: "192.168.10.179" },
-  { modelo: "Kyocera P3155dn", serie: "R4B1395508", armazem: "Braga", localizacao: "Ilha 03", ip: "192.168.10.180" },
-  { modelo: "Kyocera P3155dn", serie: "R4B1293179", armazem: "Braga", localizacao: "Ilha 04", ip: "192.168.10.181" },
-  { modelo: "Kyocera P3155dn", serie: "R4B1293180", armazem: "Braga", localizacao: "Ilha 05", ip: "192.168.10.182" },
-  { modelo: "Kyocera P3155dn", serie: "R4B1293183", armazem: "Braga", localizacao: "Balcão 01", ip: "192.168.10.183" },
-  { modelo: "Kyocera P3155dn", serie: "R4B1293184", armazem: "Braga", localizacao: "Balcão 02", ip: "192.168.10.184" },
-  { modelo: "Kyocera P3155dn", serie: "R4B2230012", armazem: "Braga", localizacao: "Dep. Logistica", ip: "192.168.10.185" },
-  { modelo: "Kyocera P3155dn", serie: "R4B1293173", armazem: "Braga", localizacao: "G/Encomendas", ip: "192.168.10.186" },
-  { modelo: "Kyocera P3155dn", serie: "R4B1395261", armazem: "Braga", localizacao: "Devoluções", ip: "192.168.10.187" },
-  { modelo: "TASKalfa 2554ci", serie: "RVP0Z03770", armazem: "Braga", localizacao: "Escritorio", ip: "192.168.10.197" },
-  { modelo: "Kyocera P3155dn", serie: "R4B1293169", armazem: "Vila Real", localizacao: "Ilha 01", ip: "192.168.11.110" },
-  { modelo: "Kyocera P3155dn", serie: "R4B1293174", armazem: "Vila Real", localizacao: "Ilha 02", ip: "192.168.11.108" },
-  { modelo: "TASKalfa 2554ci", serie: "RVP0Z03715", armazem: "Vila Real", localizacao: "Ilha 03", ip: "192.168.11.201" }
-];
-
-const manutencaoLocais = [
-  "Ilha 01",
-  "Ilha 02",
-  "Ilha 03",
-  "Ilha 04",
-  "Ilha 05",
-  "Balcão 01",
-  "Balcão 02",
-  "Dep. Logistica",
-  "G/Encomendas",
-  "Devoluções",
-  "Escritorio"
-];
-
-function renderImpressoras() {
-  const tbody = document.getElementById("impressorasTableBody");
-  if (tbody) {
-    tbody.innerHTML = impressorasData.map(item => `
-      <tr>
-        <td>${item.modelo}</td>
-        <td>${item.serie}</td>
-        <td>${item.armazem}</td>
-        <td>${item.localizacao}</td>
-        <td><a href="http://${item.ip}" target="_blank" rel="noopener noreferrer">${item.ip}</a></td>
-      </tr>
-    `).join("");
-  }
-
-  const selectIP = document.getElementById("manutencaoIP");
-  if (selectIP) {
-    selectIP.innerHTML = `
-      <option value="">Selecionar IP</option>
-      ${impressorasData.map(item => `
-        <option value="${item.ip}">
-          ${item.ip} - ${item.localizacao} (${item.armazem})
-        </option>
-      `).join("")}
-    `;
-  }
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: Arial, sans-serif;
+  width: 100%;
+  min-height: 100%;
 }
 
-function preencherLocaisManutencao() {
-  const select = document.getElementById("manutencaoLocalizacao");
-  if (!select) return;
-
-  select.innerHTML = `
-    <option value="">Selecionar localização</option>
-    ${manutencaoLocais.map(loc => `<option value="${loc}">${loc}</option>`).join("")}
-  `;
+body {
+  background: var(--bg);
+  color: var(--text);
 }
 
-async function gerarID() {
-  const ref = db.collection("config").doc("contador");
-
-  return db.runTransaction(async t => {
-    const doc = await t.get(ref);
-    const n = doc.exists ? doc.data().valor + 1 : 1;
-    t.set(ref, { valor: n });
-    return "TON-" + String(n).padStart(4, "0");
-  });
+h1, h2, h3, h4, h5, h6,
+p, span, label, div, td, th, a {
+  color: var(--text);
 }
 
-async function disponivel() {
-  const eq = document.getElementById("equipamento")?.value;
-  const loc = document.getElementById("localizacao")?.value;
-  const cor = document.getElementById("cor")?.value;
-  const data = document.getElementById("data")?.value;
-
-  if (!eq || !cor) {
-    mostrarMensagem("Preenche tudo", "erro");
-    return;
-  }
-
-  let id = await gerarID();
-
-  await db.collection("stock").add({
-    idInterno: id,
-    equipamento: eq,
-    localizacao: loc || "Sem Localização",
-    cor: cor,
-    data: data || "Sem Data",
-    created: new Date()
-  });
-
-  mostrarMensagem("Toner adicionado");
+.app-shell {
+  min-height: 100vh;
+  background: var(--bg);
+  padding-bottom: 88px;
 }
 
-db.collection("stock").orderBy("created", "desc").onSnapshot(snap => {
-  stockGlobal = [];
-  setTextCompat("countStock", snap.size);
-
-  const listaStock = document.getElementById("listaStock");
-  const dash = document.getElementById("listaDashboardStock");
-
-  if (listaStock) listaStock.innerHTML = "";
-  if (dash) dash.innerHTML = "";
-
-  snap.forEach(doc => {
-    let t = doc.data();
-    t.idDoc = doc.id;
-    stockGlobal.push(t);
-  });
-
-  renderStock();
-  renderDashboard();
-});
-
-db.collection("historico").orderBy("created", "desc").onSnapshot(snap => {
-  historicoGlobal = [];
-  setTextCompat("countUsados", snap.size);
-
-  snap.forEach(doc => {
-    let t = doc.data();
-    t.idDoc = doc.id;
-    historicoGlobal.push(t);
-  });
-
-  renderHistorico();
-});
-
-db.collection("pcs").orderBy("created", "desc").onSnapshot(snap => {
-  pcsGlobal = [];
-  setTextCompat("countPCs", snap.size);
-
-  snap.forEach(doc => {
-    let d = doc.data();
-    d.idDoc = doc.id;
-    pcsGlobal.push(d);
-  });
-
-  renderPC();
-});
-
-db.collection("manutencoes").orderBy("created", "desc").onSnapshot(snap => {
-  manutencoesGlobal = [];
-
-  snap.forEach(doc => {
-    let d = doc.data();
-    d.idDoc = doc.id;
-    manutencoesGlobal.push(d);
-  });
-
-  renderManutencoes(manutencoesGlobal);
-});
-
-function setTextCompat(id, value) {
-  const node = document.getElementById(id);
-  if (node) node.innerText = value;
+.mobile-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  padding: 16px 18px;
+  box-shadow: var(--shadow);
 }
 
-function renderDashboard() {
-  const elDash = document.getElementById("listaDashboardStock");
-  if (!elDash) return;
-
-  if (!stockGlobal.length) {
-    elDash.innerHTML = `<div class="panel empty-state"><h3>Sem toners recentes</h3><p>Adiciona toners para os veres aqui.</p></div>`;
-    return;
-  }
-
-  elDash.innerHTML = stockGlobal.slice(0, 5).map(t => `
-    <div class="dashboard-card">
-      <div class="stock-id">${t.idInterno}</div>
-      <div class="meta-line">Equipamento: <span class="meta-value">${t.equipamento}</span></div>
-      <div class="meta-line">Cor: <span class="meta-value">${t.cor}</span></div>
-      <div class="meta-line">Local: <span class="meta-value">${t.localizacao}</span></div>
-    </div>
-  `).join("");
+.mobile-header h1 {
+  margin: 0;
+  font-size: 22px;
 }
 
-function renderStock() {
-  const elStock = document.getElementById("listaStock");
-  if (!elStock) return;
-
-  if (!stockGlobal.length) {
-    elStock.innerHTML = `<div class="panel empty-state"><h3>Sem toners em stock</h3><p>Quando adicionares toners, aparecem aqui.</p></div>`;
-    return;
-  }
-
-  elStock.innerHTML = stockGlobal.map(t => `
-    <div class="stock-card">
-      <div class="stock-id">${t.idInterno}</div>
-      <div class="meta-line">Equipamento: <span class="meta-value">${t.equipamento}</span></div>
-      <div class="meta-line">Cor: <span class="meta-value">${t.cor}</span></div>
-      <div class="meta-line">Localização: <span class="meta-value">${t.localizacao}</span></div>
-      <div class="meta-line">Data: <span class="meta-value">${t.data || "Sem Data"}</span></div>
-
-      <div class="card-actions">
-        <button class="small-btn btn-use" onclick="usar('${t.idDoc}')">Usado</button>
-      </div>
-    </div>
-  `).join("");
+.mobile-main {
+  padding: 16px;
 }
 
-function renderHistorico() {
-  const elHist = document.getElementById("listaHistorico");
-  if (!elHist) return;
-
-  if (!historicoGlobal.length) {
-    elHist.innerHTML = `<div class="panel empty-state"><h3>Sem histórico</h3><p>Os toners usados aparecem aqui.</p></div>`;
-    return;
-  }
-
-  elHist.innerHTML = historicoGlobal.map(t => `
-    <div class="history-card">
-      <div class="history-id">${t.idInterno}</div>
-      <div class="meta-line">Equipamento: <span class="meta-value">${t.equipamento}</span></div>
-      <div class="meta-line">Cor: <span class="meta-value">${t.cor || "-"}</span></div>
-      <div class="meta-line">Localização: <span class="meta-value">${t.localizacao || "Sem Localização"}</span></div>
-      <div class="meta-line">Data: <span class="meta-value">${t.data || "Sem Data"}</span></div>
-
-      <div class="card-actions">
-        <button class="small-btn btn-delete" onclick="apagar('${t.idDoc}')">Apagar</button>
-      </div>
-    </div>
-  `).join("");
+.mobile-page {
+  display: block;
 }
 
-async function usar(id) {
-  let ref = db.collection("stock").doc(id);
-  let snap = await ref.get();
-
-  await db.collection("historico").add({
-    ...snap.data(),
-    created: new Date()
-  });
-
-  await ref.delete();
-  mostrarMensagem("Movido para histórico");
+.page-title {
+  margin-bottom: 14px;
 }
 
-async function apagar(id) {
-  await db.collection("historico").doc(id).delete();
-  mostrarMensagem("Apagado");
+.page-title h2 {
+  margin: 0 0 6px;
+  font-size: 24px;
 }
 
-function filtrar() {
-  let input = document.getElementById("search");
-  if (!input) return;
-
-  let txt = input.value.toLowerCase();
-  const filtrados = stockGlobal.filter(t =>
-    (t.localizacao || "").toLowerCase().includes(txt) ||
-    (t.equipamento || "").toLowerCase().includes(txt) ||
-    (t.cor || "").toLowerCase().includes(txt) ||
-    (t.idInterno || "").toLowerCase().includes(txt)
-  );
-
-  const elStock = document.getElementById("listaStock");
-  if (!elStock) return;
-
-  elStock.innerHTML = filtrados.map(t => `
-    <div class="stock-card">
-      <div class="stock-id">${t.idInterno}</div>
-      <div class="meta-line">Equipamento: <span class="meta-value">${t.equipamento}</span></div>
-      <div class="meta-line">Cor: <span class="meta-value">${t.cor}</span></div>
-      <div class="meta-line">Localização: <span class="meta-value">${t.localizacao}</span></div>
-      <div class="card-actions">
-        <button class="small-btn btn-use" onclick="usar('${t.idDoc}')">Usado</button>
-      </div>
-    </div>
-  `).join("");
+.page-title p,
+.meta-line {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
 }
 
-function filtrarDashboard() {
-  let input = document.getElementById("searchDashboard");
-  if (!input) return;
-
-  let txt = input.value.toLowerCase();
-  const filtrados = stockGlobal.filter(t =>
-    (t.localizacao || "").toLowerCase().includes(txt) ||
-    (t.equipamento || "").toLowerCase().includes(txt) ||
-    (t.cor || "").toLowerCase().includes(txt) ||
-    (t.idInterno || "").toLowerCase().includes(txt)
-  );
-
-  const dash = document.getElementById("listaDashboardStock");
-  if (!dash) return;
-
-  dash.innerHTML = filtrados.map(t => `
-    <div class="dashboard-card">
-      <div class="stock-id">${t.idInterno}</div>
-      <div class="meta-line">Equipamento: <span class="meta-value">${t.equipamento}</span></div>
-      <div class="meta-line">Cor: <span class="meta-value">${t.cor}</span></div>
-      <div class="meta-line">Local: <span class="meta-value">${t.localizacao}</span></div>
-    </div>
-  `).join("");
+.panel,
+.stat-card,
+.stock-card,
+.history-card,
+.pc-card,
+.dashboard-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+  padding: 16px;
 }
 
-const passos = [
-  "TEAMVIEWER HOST",
-  "TEAMS",
-  "DNS",
-  "NOME DO SISTEMA",
-  "Atribuir Dominio",
-  "Desinstalar MCFee",
-  "Instalar Sophos",
-  "MICROSOFT 365",
-  "Instalar Impressora",
-  "Alterar Energia",
-  "Apagar User",
-  "Criar novo user"
-];
-
-function carregarChecklist() {
-  let check = document.getElementById("checklist");
-  if (!check) return;
-
-  check.innerHTML = passos.map((p, i) => `
-    <label class="checkItem">
-      <input type="checkbox" id="p${i}">
-      <span>${p}</span>
-    </label>
-  `).join("");
+.panel + .panel {
+  margin-top: 14px;
 }
 
-function renderPC() {
-  let lista = document.getElementById("listaPC");
-  if (!lista) return;
-
-  if (!pcsGlobal.length) {
-    lista.innerHTML = `<div class="panel empty-state"><h3>Sem registos de computadores</h3><p>Os computadores guardados aparecem aqui.</p></div>`;
-    return;
-  }
-
-  lista.innerHTML = pcsGlobal.map(d => {
-    let htmlPassos = (d.passos || []).map(p => `
-      <div class="meta-line">${p.feito ? "✔" : "❌"} <span class="meta-value">${p.passo}</span></div>
-    `).join("");
-
-    return `
-      <div class="pc-card">
-        <div class="pc-name">${d.nome}</div>
-        <div class="meta-line">Data: <span class="meta-value">${d.data || "Sem Data"}</span></div>
-        <div class="pc-meta" style="margin-top:12px;">
-          ${htmlPassos}
-        </div>
-        <div class="card-actions">
-          <button class="small-btn btn-delete" onclick="apagarPC('${d.idDoc}')">Apagar</button>
-        </div>
-      </div>
-    `;
-  }).join("");
+.mobile-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 14px;
 }
 
-async function guardarPC() {
-  let nome = document.getElementById("nomePC")?.value;
-  let data = document.getElementById("dataPC")?.value;
-
-  if (!nome) {
-    mostrarMensagem("Nome obrigatório", "erro");
-    return;
-  }
-
-  if (!data) data = "Sem Data";
-
-  let dados = [];
-  passos.forEach((p, i) => {
-    dados.push({
-      passo: p,
-      feito: document.getElementById("p" + i)?.checked || false
-    });
-  });
-
-  await db.collection("pcs").add({
-    nome,
-    data,
-    passos: dados,
-    created: new Date()
-  });
-
-  document.getElementById("nomePC").value = "";
-  if (document.getElementById("dataPC")) document.getElementById("dataPC").value = "";
-  carregarChecklist();
-  mostrarMensagem("PC guardado");
+.stat-card span {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 8px;
 }
 
-async function apagarPC(id) {
-  await db.collection("pcs").doc(id).delete();
-  mostrarMensagem("PC apagado");
+.stat-card strong {
+  font-size: 24px;
+  color: var(--text);
 }
 
-async function guardarManutencao() {
-  const tecnico = document.getElementById("manutencaoTecnico")?.value || "";
-  const armazem = document.getElementById("manutencaoArmazem")?.value || "";
-  const localizacao = document.getElementById("manutencaoLocalizacao")?.value || "";
-  const ip = document.getElementById("manutencaoIP")?.value || "";
-  const motivo = document.getElementById("manutencaoMotivo")?.value || "";
-  const dataPedido = document.getElementById("manutencaoPedido")?.value || "";
-  const dataResolucao = document.getElementById("manutencaoResolucao")?.value || "";
-
-  if (!tecnico || !armazem || !localizacao || !ip || !motivo || !dataPedido) {
-    mostrarMensagem("Preenche os campos obrigatórios da manutenção.", "erro");
-    return;
-  }
-
-  await db.collection("manutencoes").add({
-    tecnico,
-    armazem,
-    localizacao,
-    ip,
-    motivo,
-    dataPedido,
-    dataResolucao: dataResolucao || "Sem resolução",
-    created: new Date()
-  });
-
-  if (document.getElementById("manutencaoMotivo")) document.getElementById("manutencaoMotivo").value = "";
-  if (document.getElementById("manutencaoPedido")) document.getElementById("manutencaoPedido").value = "";
-  if (document.getElementById("manutencaoResolucao")) document.getElementById("manutencaoResolucao").value = "";
-
-  mostrarMensagem("Manutenção guardada");
+input,
+select,
+button,
+textarea {
+  font: inherit;
 }
 
-function renderManutencoes(items) {
-  let lista = document.getElementById("listaManutencoes");
-  if (!lista) return;
-
-  if (!items.length) {
-    lista.innerHTML = `<div class="panel empty-state"><h3>Sem pedidos de manutenção</h3><p>Os pedidos vão aparecer aqui.</p></div>`;
-    return;
-  }
-
-  lista.innerHTML = items.map(item => `
-    <div class="pc-card">
-      <div class="pc-name">${item.tecnico}</div>
-      <div class="meta-line">Armazém: <span class="meta-value">${item.armazem}</span></div>
-      <div class="meta-line">Localização: <span class="meta-value">${item.localizacao}</span></div>
-      <div class="meta-line">IP: <span class="meta-value"><a href="http://${item.ip}" target="_blank" rel="noopener noreferrer">${item.ip}</a></span></div>
-      <div class="meta-line">Motivo: <span class="meta-value">${item.motivo}</span></div>
-      <div class="meta-line">Pedido: <span class="meta-value">${item.dataPedido}</span></div>
-      <div class="meta-line">Reparação/Resolução: <span class="meta-value">${item.dataResolucao || "Sem resolução"}</span></div>
-      <div class="card-actions">
-        <button class="small-btn btn-delete" onclick="apagarManutencao('${item.idDoc}')">Apagar</button>
-      </div>
-    </div>
-  `).join("");
+input[type="text"],
+input[type="date"],
+input[type="number"],
+select,
+textarea {
+  width: 100%;
+  min-height: 46px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  margin-bottom: 12px;
 }
 
-async function apagarManutencao(id) {
-  await db.collection("manutencoes").doc(id).delete();
-  mostrarMensagem("Manutenção apagada");
+input::placeholder,
+textarea::placeholder {
+  color: var(--muted);
 }
 
-window.onload = () => {
-  let sw = document.getElementById("darkSwitch");
+textarea {
+  min-height: 100px;
+  resize: vertical;
+}
 
-  if (localStorage.getItem("modo") === "dark") {
-    document.body.classList.add("dark");
-    document.documentElement.classList.add("dark");
-    if (sw) sw.checked = true;
-  }
+button,
+.primary-btn {
+  width: 100%;
+  min-height: 46px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: none;
+  background: var(--primary);
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+}
 
-  if (sw) {
-    sw.addEventListener("change", () => {
-      document.body.classList.toggle("dark");
-      document.documentElement.classList.toggle("dark");
-      localStorage.setItem("modo", sw.checked ? "dark" : "light");
-    });
-  }
+button:hover,
+.primary-btn:hover {
+  background: var(--primary-hover);
+}
 
-  carregarChecklist();
-  renderImpressoras();
-  preencherLocaisManutencao();
-  mudarPagina("impressoras");
-};
+.cards-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.stock-card,
+.history-card,
+.pc-card,
+.dashboard-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.stock-card::before,
+.history-card::before,
+.pc-card::before,
+.dashboard-card::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 5px;
+  height: 100%;
+  background: var(--primary);
+}
+
+.history-card::before {
+  background: var(--warning);
+}
+
+.pc-card::before {
+  background: var(--success);
+}
+
+.stock-id,
+.history-id,
+.pc-name {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.meta-value {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.card-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+
+.small-btn {
+  min-width: 110px;
+  min-height: 40px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: none;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.btn-use {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.btn-delete {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.btn-edit {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.checklist-grid {
+  display: grid;
+  gap: 10px;
+  margin: 8px 0 14px;
+}
+
+.checkItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 12px 14px;
+}
+
+.checkItem input {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+}
+
+.checkItem span {
+  flex: 1;
+  color: var(--text);
+}
+
+.checkItem input:checked + span {
+  color: var(--success);
+  font-weight: bold;
+}
+
+.switch-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.switch-row input {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+}
+
+.table-panel {
+  overflow: hidden;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--card);
+  min-width: 700px;
+}
+
+th,
+td {
+  padding: 12px;
+  border: 1px solid var(--border);
+  text-align: left;
+  color: var(--text);
+  font-size: 14px;
+}
+
+th {
+  background: var(--card);
+}
+
+table a {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: bold;
+}
+
+table a:hover {
+  text-decoration: underline;
+}
+
+.bottom-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--nav);
+  border-top: 1px solid var(--border);
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
+  z-index: 50;
+}
+
+.bottom-nav button {
+  min-height: 46px;
+  border-radius: 12px;
+  font-size: 18px;
+  padding: 0;
+}
+
+.toast-app {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  left: 16px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  color: white;
+  font-weight: bold;
+  z-index: 9999;
+  display: none;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.toast-app.sucesso {
+  background: #16a34a;
+}
+
+.toast-app.erro {
+  background: #dc2626;
+}
