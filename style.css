@@ -1,450 +1,232 @@
-* {
-  box-sizing: border-box;
-}
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>App Braga</title>
+  <meta name="theme-color" content="#111827">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+</head>
+<body>
 
-:root {
-  --bg: #f3f6fb;
-  --card: #ffffff;
-  --border: #dbe3ee;
-  --text: #111827;
-  --muted: #6b7280;
-  --primary: #2563eb;
-  --primary-hover: #1d4ed8;
-  --danger: #dc2626;
-  --success: #16a34a;
-  --warning: #d97706;
-  --nav: #ffffff;
-  --shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
-  --sidebar: #111827;
-}
+  <div class="mobile-overlay" id="mobileOverlay" onclick="fecharMenu()"></div>
 
-html.dark,
-body.dark {
-  --bg: #0f172a;
-  --card: #111827;
-  --border: #334155;
-  --text: #f1f5f9;
-  --muted: #cbd5e1;
-  --primary: #3b82f6;
-  --primary-hover: #2563eb;
-  --danger: #ef4444;
-  --success: #22c55e;
-  --warning: #f59e0b;
-  --nav: #111827;
-  --shadow: 0 8px 20px rgba(0, 0, 0, 0.22);
-  --sidebar: #020617;
-}
+  <aside class="mobile-sidebar" id="mobileSidebar">
+    <div class="mobile-sidebar-top">
+      <h2>App Braga</h2>
+      <button class="close-menu-btn" onclick="fecharMenu()">✕</button>
+    </div>
 
-html,
-body {
-  margin: 0;
-  padding: 0;
-  background: var(--bg);
-  color: var(--text);
-  font-family: Arial, sans-serif;
-  width: 100%;
-  min-height: 100%;
-}
+    <nav class="mobile-menu">
+      <button onclick="irParaPagina('impressoras')">Dashboard</button>
+      <button onclick="irParaPagina('stockPage')">Stock</button>
+      <button onclick="irParaPagina('historicoPage')">Histórico</button>
+      <button onclick="irParaPagina('computadores')">Computadores</button>
+      <button onclick="irParaPagina('impressorasLista')">Impressoras</button>
+      <button onclick="irParaPagina('manutencaoImpressoras')">Manutenção Impressoras</button>
+      <button onclick="irParaPagina('config')">Configurações</button>
+    </nav>
+  </aside>
 
-body {
-  background: var(--bg);
-  color: var(--text);
-}
+  <div class="app-shell">
+    <header class="mobile-header">
+      <button class="open-menu-btn" onclick="abrirMenu()">☰</button>
+      <h1>App Braga</h1>
+    </header>
 
-h1, h2, h3, h4, h5, h6,
-p, span, label, div, td, th, a {
-  color: var(--text);
-}
+    <main class="mobile-main">
 
-.app-shell {
-  min-height: 100vh;
-  background: var(--bg);
-}
+      <section id="impressoras" class="mobile-page">
+        <div class="page-title">
+          <h2>Dashboard Toners</h2>
+          <p>Gestão rápida de stock</p>
+        </div>
 
-.mobile-header {
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  background: var(--card);
-  border-bottom: 1px solid var(--border);
-  padding: 16px 18px;
-  box-shadow: var(--shadow);
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
+        <div class="stats-grid mobile-stats">
+          <div class="stat-card">
+            <span>Stock</span>
+            <strong id="countStock">0</strong>
+          </div>
+          <div class="stat-card">
+            <span>Usados</span>
+            <strong id="countUsados">0</strong>
+          </div>
+          <div class="stat-card">
+            <span>PCs</span>
+            <strong id="countPCs">0</strong>
+          </div>
+        </div>
 
-.mobile-header h1 {
-  margin: 0;
-  font-size: 22px;
-}
+        <div class="panel">
+          <input id="searchDashboard" type="text" placeholder="Pesquisar no stock..." oninput="filtrarDashboard()">
+          <div id="listaDashboardStock" class="cards-list"></div>
+        </div>
 
-.open-menu-btn,
-.close-menu-btn {
-  width: 44px;
-  height: 44px;
-  border: none;
-  border-radius: 12px;
-  background: var(--primary);
-  color: white;
-  font-size: 20px;
-  cursor: pointer;
-}
+        <div class="panel">
+          <h3>Adicionar Toner</h3>
 
-.mobile-main {
-  padding: 16px;
-}
+          <select id="equipamento">
+            <option value="">Equipamento</option>
+            <option>P3155DN</option>
+            <option>TASKalfa_255ci</option>
+            <option>PA5500x</option>
+          </select>
 
-.mobile-page {
-  display: block;
-}
+          <select id="localizacao">
+            <option value="">Localização</option>
+            <option>Sem Localização</option>
+            <option>Ilha 1 - R4B2229805</option>
+            <option>Ilha 2 - WD44336210</option>
+            <option>Ilha 3 - R4B1395508</option>
+            <option>Ilha 4 - R4B1293179</option>
+            <option>Ilha 5 - R4B1293180</option>
+            <option>Balcão 1 - R4B1293183</option>
+            <option>Balcão 2 - R4B1293184</option>
+            <option>Dep.Logistica - R4B2230012</option>
+            <option>G/Encomendas - R4B1293173</option>
+            <option>Devoluções - R4B1395261</option>
+            <option>Escritorio - RVP0Z03770</option>
+            <option>Ilha1-VRL - R4B1293169</option>
+            <option>Ilha2-VRL - R4B1293174</option>
+            <option>Ilha3-VRL - RVP0Z03715</option>
+          </select>
 
-.page-title {
-  margin-bottom: 14px;
-}
+          <select id="cor">
+            <option value="">Cor</option>
+            <option>Preto</option>
+            <option>Amarelo</option>
+            <option>Vermelho</option>
+            <option>Azul</option>
+          </select>
 
-.page-title h2 {
-  margin: 0 0 6px;
-  font-size: 24px;
-}
+          <input type="date" id="data">
 
-.page-title p,
-.meta-line {
-  margin: 0;
-  color: var(--muted);
-  font-size: 14px;
-}
+          <button class="primary-btn" onclick="disponivel()">Adicionar Toner</button>
+        </div>
+      </section>
 
-.panel,
-.stat-card,
-.stock-card,
-.history-card,
-.pc-card,
-.dashboard-card {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 18px;
-  box-shadow: var(--shadow);
-  padding: 16px;
-}
+      <section id="stockPage" class="mobile-page" style="display:none;">
+        <div class="page-title">
+          <h2>Stock</h2>
+          <p>Toners disponíveis</p>
+        </div>
 
-.panel + .panel {
-  margin-top: 14px;
-}
+        <div class="panel">
+          <input id="search" type="text" placeholder="Pesquisar por localização..." oninput="filtrar()">
+        </div>
 
-.mobile-stats {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-  margin-bottom: 14px;
-}
+        <div id="listaStock" class="cards-list"></div>
+      </section>
 
-.stat-card span {
-  display: block;
-  font-size: 12px;
-  color: var(--muted);
-  margin-bottom: 8px;
-}
+      <section id="historicoPage" class="mobile-page" style="display:none;">
+        <div class="page-title">
+          <h2>Histórico</h2>
+          <p>Toners usados</p>
+        </div>
 
-.stat-card strong {
-  font-size: 24px;
-  color: var(--text);
-}
+        <div id="listaHistorico" class="cards-list"></div>
+      </section>
 
-input,
-select,
-button,
-textarea {
-  font: inherit;
-}
+      <section id="computadores" class="mobile-page" style="display:none;">
+        <div class="page-title">
+          <h2>Computadores</h2>
+          <p>Checklist de instalação</p>
+        </div>
 
-input[type="text"],
-input[type="date"],
-input[type="number"],
-select,
-textarea {
-  width: 100%;
-  min-height: 46px;
-  padding: 12px 14px;
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  background: var(--card);
-  color: var(--text);
-  margin-bottom: 12px;
-}
+        <div class="panel">
+          <input id="nomePC" type="text" placeholder="Nome do Computador">
+          <input type="date" id="dataPC">
+          <div id="checklist" class="checklist-grid mobile-checklist"></div>
+          <button class="primary-btn" onclick="guardarPC()">Guardar</button>
+        </div>
 
-input::placeholder,
-textarea::placeholder {
-  color: var(--muted);
-}
+        <div class="panel">
+          <h3>Histórico de Computadores</h3>
+          <div id="listaPC" class="cards-list"></div>
+        </div>
+      </section>
 
-textarea {
-  min-height: 100px;
-  resize: vertical;
-}
+      <section id="impressorasLista" class="mobile-page" style="display:none;">
+        <div class="page-title">
+          <h2>Impressoras</h2>
+          <p>Lista de impressoras e IPs</p>
+        </div>
 
-button,
-.primary-btn {
-  width: 100%;
-  min-height: 46px;
-  padding: 12px 14px;
-  border-radius: 12px;
-  border: none;
-  background: var(--primary);
-  color: white;
-  font-weight: bold;
-  cursor: pointer;
-}
+        <div class="panel table-panel">
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Modelo</th>
+                  <th>Série</th>
+                  <th>Armazém</th>
+                  <th>Localização</th>
+                  <th>IP</th>
+                </tr>
+              </thead>
+              <tbody id="impressorasTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
 
-button:hover,
-.primary-btn:hover {
-  background: var(--primary-hover);
-}
+      <section id="manutencaoImpressoras" class="mobile-page" style="display:none;">
+        <div class="page-title">
+          <h2>Manutenção Impressoras</h2>
+          <p>Pedidos e resolução</p>
+        </div>
 
-.cards-list {
-  display: grid;
-  gap: 12px;
-  margin-top: 12px;
-}
+        <div class="panel">
+          <select id="manutencaoTecnico">
+            <option value="">Selecionar técnico</option>
+            <option value="Ricardo">Ricardo</option>
+          </select>
 
-.stock-card,
-.history-card,
-.pc-card,
-.dashboard-card {
-  position: relative;
-  overflow: hidden;
-}
+          <select id="manutencaoArmazem">
+            <option value="">Selecionar armazém</option>
+            <option value="Braga">Braga</option>
+            <option value="Vila Real">Vila Real</option>
+          </select>
 
-.stock-card::before,
-.history-card::before,
-.pc-card::before,
-.dashboard-card::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 5px;
-  height: 100%;
-  background: var(--primary);
-}
+          <select id="manutencaoLocalizacao"></select>
+          <select id="manutencaoIP"></select>
 
-.history-card::before {
-  background: var(--warning);
-}
+          <input type="date" id="manutencaoPedido">
+          <input type="date" id="manutencaoResolucao">
 
-.pc-card::before {
-  background: var(--success);
-}
+          <textarea id="manutencaoMotivo" placeholder="Motivo da manutenção"></textarea>
 
-.stock-id,
-.history-id,
-.pc-name {
-  font-size: 16px;
-  font-weight: 700;
-  margin-bottom: 10px;
-}
+          <button class="primary-btn" onclick="guardarManutencao()">Guardar manutenção</button>
+        </div>
 
-.meta-value {
-  color: var(--text);
-  font-weight: 600;
-}
+        <div class="panel">
+          <h3>Histórico</h3>
+          <div id="listaManutencoes" class="cards-list"></div>
+        </div>
+      </section>
 
-.card-actions {
-  display: flex;
-  gap: 8px;
-  margin-top: 14px;
-  flex-wrap: wrap;
-}
+      <section id="config" class="mobile-page" style="display:none;">
+        <div class="page-title">
+          <h2>Configurações</h2>
+          <p>Preferências da aplicação</p>
+        </div>
 
-.small-btn {
-  min-width: 110px;
-  min-height: 40px;
-  padding: 10px 12px;
-  border-radius: 10px;
-  border: none;
-  font-weight: bold;
-  cursor: pointer;
-}
+        <div class="panel">
+          <label class="switch-row">
+            <input type="checkbox" id="darkSwitch">
+            <span>Dark Mode</span>
+          </label>
+        </div>
+      </section>
 
-.btn-use {
-  background: #dcfce7;
-  color: #166534;
-}
+    </main>
+  </div>
 
-.btn-delete {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.btn-edit {
-  background: #dbeafe;
-  color: #1d4ed8;
-}
-
-.checklist-grid {
-  display: grid;
-  gap: 10px;
-  margin: 8px 0 14px;
-}
-
-.checkItem {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 12px 14px;
-}
-
-.checkItem input {
-  width: 20px;
-  height: 20px;
-  margin: 0;
-}
-
-.checkItem span {
-  flex: 1;
-  color: var(--text);
-}
-
-.checkItem input:checked + span {
-  color: var(--success);
-  font-weight: bold;
-}
-
-.switch-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.switch-row input {
-  width: 20px;
-  height: 20px;
-  margin: 0;
-}
-
-.table-panel {
-  overflow: hidden;
-}
-
-.table-scroll {
-  overflow-x: auto;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  background: var(--card);
-  min-width: 700px;
-}
-
-th,
-td {
-  padding: 12px;
-  border: 1px solid var(--border);
-  text-align: left;
-  color: var(--text);
-  font-size: 14px;
-}
-
-th {
-  background: var(--card);
-}
-
-table a {
-  color: var(--primary);
-  text-decoration: none;
-  font-weight: bold;
-}
-
-table a:hover {
-  text-decoration: underline;
-}
-
-.mobile-sidebar {
-  position: fixed;
-  top: 0;
-  left: -290px;
-  width: 280px;
-  height: 100vh;
-  background: var(--sidebar);
-  z-index: 200;
-  transition: left 0.25s ease;
-  padding: 18px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
-}
-
-.mobile-sidebar.open {
-  left: 0;
-}
-
-.mobile-sidebar-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 18px;
-}
-
-.mobile-sidebar-top h2 {
-  color: white;
-  margin: 0;
-  font-size: 22px;
-}
-
-.mobile-menu {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.mobile-menu button {
-  width: 100%;
-  min-height: 48px;
-  text-align: left;
-  background: transparent;
-  border: none;
-  color: white;
-  border-radius: 12px;
-  padding: 12px 14px;
-  font-size: 16px;
-}
-
-.mobile-menu button:hover {
-  background: rgba(255,255,255,0.08);
-}
-
-.mobile-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.35);
-  z-index: 150;
-  display: none;
-}
-
-.mobile-overlay.show {
-  display: block;
-}
-
-.toast-app {
-  position: fixed;
-  top: 16px;
-  right: 16px;
-  left: 16px;
-  padding: 12px 16px;
-  border-radius: 12px;
-  color: white;
-  font-weight: bold;
-  z-index: 9999;
-  display: none;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
-}
-
-.toast-app.sucesso {
-  background: #16a34a;
-}
-
-.toast-app.erro {
-  background: #dc2626;
-}
+  <script src="app.js"></script>
+</body>
+</html>
