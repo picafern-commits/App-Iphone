@@ -1,218 +1,224 @@
 <!DOCTYPE html>
 <html lang="pt">
 <head>
-<meta charset="UTF-8">
-
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-
-<!-- 🔥 ÍCONE DA APP -->
-<link rel="apple-touch-icon" href="/icon.png">
-<link rel="icon" href="/icon.png">
-
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Empresa Tech">
-
-<meta name="theme-color" content="#000000">
-
-<title>Empresa Tech</title>
-
-<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
-
-<style>
-html,body{margin:0;overflow-x:hidden;}
-
-body{
-  font-family:-apple-system;
-  background:#f2f2f7;
-}
-
-.dark{background:#1c1c1e;color:white;}
-
-.container{padding:15px;padding-bottom:120px;}
-
-.top{display:flex;gap:10px;}
-
-.box{
-  flex:1;
-  background:white;
-  padding:15px;
-  border-radius:14px;
-  text-align:center;
-}
-
-.dark .box{background:#2c2c2e;}
-
-input,select,button{
-  width:100%;
-  padding:14px;
-  margin-top:10px;
-  border-radius:12px;
-}
-
-.dark input,.dark select{
-  background:#2c2c2e;
-  color:white;
-}
-
-button{
-  background:#007AFF;
-  color:white;
-  border:none;
-}
-
-.card{
-  background:white;
-  padding:12px;
-  border-radius:12px;
-  margin-top:10px;
-}
-
-.dark .card{background:#2c2c2e;}
-
-.delete{
-  background:red;
-  margin-top:10px;
-}
-
-/* CHECKBOX */
-.checkItem{
-  display:flex;
-  align-items:center;
-  gap:12px;
-  padding:14px;
-  margin-top:10px;
-  border-radius:12px;
-  background:white;
-  cursor:pointer;
-}
-
-.dark .checkItem{background:#2c2c2e;}
-
-.checkItem input{width:22px;height:22px;}
-
-.checkItem span{flex:1;}
-
-.checkItem input:checked + span{
-  color:#34C759;
-  font-weight:bold;
-}
-
-/* NAV */
-nav{
-  position:fixed;
-  bottom:0;
-  width:100%;
-  display:flex;
-  justify-content:space-around;
-  background:white;
-  padding:12px;
-}
-
-.dark nav{background:#1c1c1e;}
-
-nav button{
-  background:none;
-  border:none;
-  font-size:22px;
-}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>App Braga</title>
+  <meta name="theme-color" content="#111827">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 </head>
-
 <body>
 
-<div class="container">
+  <div class="app-shell">
+    <header class="mobile-header">
+      <h1>App Braga</h1>
+    </header>
 
-<!-- IMPRESSORAS -->
-<div id="impressoras">
+    <main class="mobile-main">
 
-<h2>Dashboard Toners</h2>
+      <section id="impressoras" class="mobile-page">
+        <div class="page-title">
+          <h2>Dashboard Toners</h2>
+          <p>Gestão rápida de stock</p>
+        </div>
 
-<div class="top">
-  <div class="box"><b id="countStock">0</b><br>Stock</div>
-  <div class="box"><b id="countUsados">0</b><br>Usados</div>
-</div>
+        <div class="stats-grid mobile-stats">
+          <div class="stat-card">
+            <span>Stock</span>
+            <strong id="countStock">0</strong>
+          </div>
+          <div class="stat-card">
+            <span>Usados</span>
+            <strong id="countUsados">0</strong>
+          </div>
+          <div class="stat-card">
+            <span>PCs</span>
+            <strong id="countPCs">0</strong>
+          </div>
+        </div>
 
-<input id="search" placeholder="Pesquisar localização..." oninput="filtrar()">
+        <div class="panel">
+          <input id="searchDashboard" type="text" placeholder="Pesquisar no stock..." oninput="filtrarDashboard()">
+          <div id="listaDashboardStock" class="cards-list"></div>
+        </div>
 
-<select id="equipamento">
-<option value="">Equipamento</option>
-<option>P3155DN</option>
-<option>TASKalfa_255ci</option>
-<option>PA5500x</option>
-</select>
+        <div class="panel">
+          <h3>Adicionar Toner</h3>
 
-<select id="localizacao">
-<option value="">Localização</option>
-<option>Sem Localização</option>
-<option>Ilha 1 - R4B2229805</option>
-<option>Ilha 2 - WD44336210</option>
-<option>Ilha 3 - R4B1395508</option>
-<option>Ilha 4 - R4B1293179</option>
-<option>Ilha 5 - R4B1293180</option>
-<option>Balcão 1 - R4B1293183</option>
-<option>Balcão 2 - R4B1293184</option>
-<option>Dep.Logistica - R4B2230012</option>
-<option>Grandes.Encomendas - R4B1293173</option>
-<option>Devoluções - R4B1395261</option>
-<option>Escritório - RVP0ZZ03770</option>
-<option>Ilha1-VRL - R4B1293169</option>
-<option>Ilha2-VRL - R4B1293174</option>
-<option>Ilha3-VRL - RVP0Z03715</option>
-</select>
+          <select id="equipamento">
+            <option value="">Equipamento</option>
+            <option>P3155DN</option>
+            <option>TASKalfa_255ci</option>
+            <option>PA5500x</option>
+          </select>
 
-<select id="cor">
-<option value="">Cor</option>
-<option>Preto</option>
-<option>Amarelo</option>
-<option>Vermelho</option>
-<option>Azul</option>
-</select>
+          <select id="localizacao">
+            <option value="">Localização</option>
+            <option>Sem Localização</option>
+            <option>Ilha 1 - R4B2229805</option>
+            <option>Ilha 2 - WD44336210</option>
+            <option>Ilha 3 - R4B1395508</option>
+            <option>Ilha 4 - R4B1293179</option>
+            <option>Ilha 5 - R4B1293180</option>
+            <option>Balcão 1 - R4B1293183</option>
+            <option>Balcão 2 - R4B1293184</option>
+            <option>Dep.Logistica - R4B2230012</option>
+            <option>G/Encomendas - R4B1293173</option>
+            <option>Devoluções - R4B1395261</option>
+            <option>Escritorio - RVP0Z03770</option>
+            <option>Ilha1-VRL - R4B1293169</option>
+            <option>Ilha2-VRL - R4B1293174</option>
+            <option>Ilha3-VRL - RVP0Z03715</option>
+          </select>
 
-<input type="date" id="data">
+          <select id="cor">
+            <option value="">Cor</option>
+            <option>Preto</option>
+            <option>Amarelo</option>
+            <option>Vermelho</option>
+            <option>Azul</option>
+          </select>
 
-<button onclick="disponivel()">Adicionar</button>
+          <input type="date" id="data">
 
-<h3>Stock</h3>
-<div id="listaStock"></div>
+          <button class="primary-btn" onclick="disponivel()">Adicionar Toner</button>
+        </div>
+      </section>
 
-<h3>Histórico</h3>
-<div id="listaHistorico"></div>
+      <section id="stockPage" class="mobile-page" style="display:none;">
+        <div class="page-title">
+          <h2>Stock</h2>
+          <p>Toners disponíveis</p>
+        </div>
 
-</div>
+        <div class="panel">
+          <input id="search" type="text" placeholder="Pesquisar por localização..." oninput="filtrar()">
+        </div>
 
-<!-- COMPUTADORES -->
-<div id="computadores" style="display:none">
+        <div id="listaStock" class="cards-list"></div>
+      </section>
 
-<h2>Instalação Computador</h2>
+      <section id="historicoPage" class="mobile-page" style="display:none;">
+        <div class="page-title">
+          <h2>Histórico</h2>
+          <p>Toners usados</p>
+        </div>
 
-<input id="nomePC" placeholder="Nome do Computador">
-<input type="date" id="dataPC">
+        <div id="listaHistorico" class="cards-list"></div>
+      </section>
 
-<div id="checklist"></div>
+      <section id="computadores" class="mobile-page" style="display:none;">
+        <div class="page-title">
+          <h2>Computadores</h2>
+          <p>Checklist de instalação</p>
+        </div>
 
-<button onclick="guardarPC()">Guardar</button>
+        <div class="panel">
+          <input id="nomePC" type="text" placeholder="Nome do Computador">
+          <input type="date" id="dataPC">
 
-<h3>Histórico</h3>
-<div id="listaPC"></div>
+          <div id="checklist" class="checklist-grid mobile-checklist"></div>
 
-</div>
+          <button class="primary-btn" onclick="guardarPC()">Guardar</button>
+        </div>
 
-<!-- CONFIG -->
-<div id="config" style="display:none">
-<h2>Configurações</h2>
-<label><input type="checkbox" id="darkSwitch"> Dark Mode</label>
-</div>
+        <div class="panel">
+          <h3>Histórico de Computadores</h3>
+          <div id="listaPC" class="cards-list"></div>
+        </div>
+      </section>
 
-</div>
+      <section id="impressorasLista" class="mobile-page" style="display:none;">
+        <div class="page-title">
+          <h2>Impressoras</h2>
+          <p>Lista de impressoras e IPs</p>
+        </div>
 
-<nav>
-<button onclick="mudarPagina('impressoras')">🖨️</button>
-<button onclick="mudarPagina('computadores')">💻</button>
-<button onclick="mudarPagina('config')">⚙️</button>
-</nav>
+        <div class="panel table-panel">
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Modelo</th>
+                  <th>Série</th>
+                  <th>Armazém</th>
+                  <th>Localização</th>
+                  <th>IP</th>
+                </tr>
+              </thead>
+              <tbody id="impressorasTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
 
-<script src="app.js"></script>
+      <section id="manutencaoImpressoras" class="mobile-page" style="display:none;">
+        <div class="page-title">
+          <h2>Manutenção Impressoras</h2>
+          <p>Pedidos e resolução</p>
+        </div>
+
+        <div class="panel">
+          <select id="manutencaoTecnico">
+            <option value="">Selecionar técnico</option>
+            <option value="Ricardo">Ricardo</option>
+          </select>
+
+          <select id="manutencaoArmazem">
+            <option value="">Selecionar armazém</option>
+            <option value="Braga">Braga</option>
+            <option value="Vila Real">Vila Real</option>
+          </select>
+
+          <select id="manutencaoLocalizacao"></select>
+          <select id="manutencaoIP"></select>
+
+          <input type="date" id="manutencaoPedido">
+          <input type="date" id="manutencaoResolucao">
+
+          <textarea id="manutencaoMotivo" placeholder="Motivo da manutenção"></textarea>
+
+          <button class="primary-btn" onclick="guardarManutencao()">Guardar manutenção</button>
+        </div>
+
+        <div class="panel">
+          <h3>Histórico</h3>
+          <div id="listaManutencoes" class="cards-list"></div>
+        </div>
+      </section>
+
+      <section id="config" class="mobile-page" style="display:none;">
+        <div class="page-title">
+          <h2>Configurações</h2>
+          <p>Preferências da aplicação</p>
+        </div>
+
+        <div class="panel">
+          <label class="switch-row">
+            <input type="checkbox" id="darkSwitch">
+            <span>Dark Mode</span>
+          </label>
+        </div>
+      </section>
+
+    </main>
+
+    <nav class="bottom-nav">
+      <button onclick="mudarPagina('impressoras')">🏠</button>
+      <button onclick="mudarPagina('stockPage')">📦</button>
+      <button onclick="mudarPagina('historicoPage')">🕘</button>
+      <button onclick="mudarPagina('computadores')">💻</button>
+      <button onclick="mudarPagina('impressorasLista')">🖨️</button>
+      <button onclick="mudarPagina('manutencaoImpressoras')">🛠️</button>
+      <button onclick="mudarPagina('config')">⚙️</button>
+    </nav>
+  </div>
+
+  <script src="app.js"></script>
 </body>
 </html>
