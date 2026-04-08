@@ -22,6 +22,7 @@
 
     <div class="mobile-menu">
       <button onclick="irParaPagina('dashboard')">🏠 Dashboard</button>
+      <button onclick="irParaPagina('registoPage')">🧾 Registo Toners</button>
       <button onclick="irParaPagina('stockPage')">📦 Stock</button>
       <button onclick="irParaPagina('historicoPage')">🕘 Histórico</button>
       <button onclick="irParaPagina('computadores')">💻 Computadores</button>
@@ -39,7 +40,7 @@
       <button class="open-menu-btn" onclick="abrirMenu()">☰</button>
       <div class="header-text">
         <h1>App Braga</h1>
-        <p id="headerSubtitle">Gestão móvel</p>
+        <p id="headerSubtitle">Dashboard Toners</p>
       </div>
     </header>
 
@@ -86,10 +87,16 @@
           <input id="searchDashboard" type="text" placeholder="Pesquisar no stock..." oninput="filtrarDashboard()">
           <div id="listaDashboardStock" class="cards-list"></div>
         </div>
+      </section>
+
+      <!-- REGISTO TONERS -->
+      <section id="registoPage" class="mobile-page" style="display:none;">
+        <div class="page-title">
+          <h2>Registo Toners</h2>
+          <p>Adicionar toner ao stock</p>
+        </div>
 
         <div class="panel">
-          <h3>Adicionar Toner</h3>
-
           <select id="equipamento">
             <option value="">Equipamento</option>
             <option>P3155DN</option>
@@ -164,9 +171,7 @@
         <div class="panel">
           <input id="nomePC" type="text" placeholder="Nome do Computador">
           <input type="date" id="dataPC">
-
           <div id="checklist" class="checklist-grid mobile-checklist"></div>
-
           <button class="primary-btn" onclick="guardarPC()">Guardar</button>
         </div>
 
@@ -214,14 +219,27 @@
             <option value="Ricardo">Ricardo</option>
           </select>
 
-          <select id="manutencaoArmazem">
+          <select id="manutencaoArmazem" onchange="sincronizarManutencaoPorArmazem()">
             <option value="">Selecionar armazém</option>
             <option value="Braga">Braga</option>
             <option value="Vila Real">Vila Real</option>
           </select>
 
-          <select id="manutencaoLocalizacao"></select>
-          <select id="manutencaoIP"></select>
+          <select id="manutencaoModelo" onchange="sincronizarManutencaoPorModelo()">
+            <option value="">Selecionar modelo</option>
+          </select>
+
+          <select id="manutencaoSerie" onchange="sincronizarManutencaoPorSerie()">
+            <option value="">Selecionar nº série</option>
+          </select>
+
+          <select id="manutencaoLocalizacao">
+            <option value="">Selecionar localização</option>
+          </select>
+
+          <select id="manutencaoIP" onchange="sincronizarManutencaoPorIP()">
+            <option value="">Selecionar IP</option>
+          </select>
 
           <input type="date" id="manutencaoPedido">
           <input type="date" id="manutencaoResolucao">
@@ -365,14 +383,6 @@
       </section>
 
     </main>
-
-    <nav class="bottom-nav">
-      <button onclick="mudarPagina('dashboard')">🏠</button>
-      <button onclick="mudarPagina('stockPage')">📦</button>
-      <button onclick="mudarPagina('historicoPage')">🕘</button>
-      <button onclick="mudarPagina('computadores')">💻</button>
-      <button onclick="abrirMenu()">☰</button>
-    </nav>
   </div>
 
   <script src="app.js"></script>
