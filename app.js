@@ -1837,6 +1837,10 @@ function temPistola(u) {
   return normalizarTexto(u.op_pistola) !== "";
 }
 
+function temTeamviewer(u) {
+  return normalizarTexto(u.teamviewer) !== "";
+}
+
 function renderUsers(lista = usersData) {
   const box = el("listaUsers");
   if (!box) return;
@@ -1848,39 +1852,42 @@ function renderUsers(lista = usersData) {
   box.innerHTML = lista.map((u, i) => `
     <div class="mobile-data-card">
       <div class="mobile-data-card-top">
-        <h3>${u.nome}</h3>
+        <h3>${u.nome || "-"}</h3>
         ${temMO365(u) ? `<span class="badge ok">MO365</span>` : `<span class="badge livre">Sem MO365</span>`}
       </div>
 
       <div class="meta-line">Zona: <span class="meta-value">${u.zona || "-"}</span></div>
       <div class="meta-line">User PC: <span class="meta-value">${u.user_pc_eye || "-"}</span></div>
-      <div class="meta-line">Pistola: <span class="meta-value">${u.op_pistola || "-"}</span></div>
+      <div class="meta-line">Pass Remote: <span class="meta-value">${u.pass_remote || "-"}</span></div>
+      <div class="meta-line">Op. Pistola: <span class="meta-value">${u.op_pistola || "-"}</span></div>
+      <div class="meta-line">Pass Pistola: <span class="meta-value">${u.pass_pistola || "-"}</span></div>
+      <div class="meta-line">Nome PC: <span class="meta-value">${u.nome_pc || "-"}</span></div>
+      <div class="meta-line">TeamViewer: <span class="meta-value">${u.teamviewer || "-"}</span></div>
+      <div class="meta-line">User MO365: <span class="meta-value">${u.user_mo365 || "-"}</span></div>
+      <div class="meta-line">Pw MO365: <span class="meta-value">${u.pw_mo365 || "-"}</span></div>
       <div class="meta-line">Email Bragalis: <span class="meta-value">${u.email_bragalis || "-"}</span></div>
+
+      <div class="card-actions">
+        ${temPistola(u) ? `<span class="badge ok">Com Pistola</span>` : `<span class="badge livre">Sem Pistola</span>`}
+        ${temTeamviewer(u) ? `<span class="badge ok">TeamViewer</span>` : `<span class="badge aviso">Sem TV</span>`}
+      </div>
 
       <div class="card-actions">
         <button class="small-btn btn-edit" onclick="toggleUserExtra('userExtra${i}')">Ver mais</button>
       </div>
 
       <div id="userExtra${i}" class="user-extra-box" style="display:none;">
-        <div class="meta-line">Pass Remote: <span class="meta-value">${u.pass_remote || "-"}</span></div>
         <div class="meta-line">Pass Eye Peak: <span class="meta-value">${u.pass_eye_peak || "-"}</span></div>
-        <div class="meta-line">Pass Pistola: <span class="meta-value">${u.pass_pistola || "-"}</span></div>
-        <div class="meta-line">Nome PC: <span class="meta-value">${u.nome_pc || "-"}</span></div>
-        <div class="meta-line">TeamViewer: <span class="meta-value">${u.teamviewer || "-"}</span></div>
-        <div class="meta-line">MO365: <span class="meta-value">${u.user_mo365 || "-"}</span></div>
-        <div class="meta-line">Pw MO365: <span class="meta-value">${u.pw_mo365 || "-"}</span></div>
         <div class="meta-line">Pass Bragalis: <span class="meta-value">${u.pass_bragalis || "-"}</span></div>
       </div>
     </div>
   `).join("");
 }
-
 function toggleUserExtra(id) {
   const box = el(id);
   if (!box) return;
   box.style.display = box.style.display === "none" ? "block" : "none";
 }
-
 function filtrarUsers() {
   const txt = normalizarTexto(el("searchUsers")?.value || "");
   const mo365 = normalizarTexto(el("filterUsersMO365")?.value || "");
@@ -1891,7 +1898,11 @@ function filtrarUsers() {
       normalizarTexto(u.nome).includes(txt) ||
       normalizarTexto(u.zona).includes(txt) ||
       normalizarTexto(u.user_pc_eye).includes(txt) ||
+      normalizarTexto(u.pass_remote).includes(txt) ||
       normalizarTexto(u.op_pistola).includes(txt) ||
+      normalizarTexto(u.pass_pistola).includes(txt) ||
+      normalizarTexto(u.nome_pc).includes(txt) ||
+      normalizarTexto(u.teamviewer).includes(txt) ||
       normalizarTexto(u.email_bragalis).includes(txt) ||
       normalizarTexto(u.user_mo365).includes(txt);
 
@@ -1908,7 +1919,6 @@ function filtrarUsers() {
 
   renderUsers(filtrados);
 }
-
 /* =========================
    DARK MODE
 ========================= */
