@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <title>Dashboard</title>
+  <title>Users</title>
   <meta name="theme-color" content="#111827">
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -25,7 +25,7 @@
   </div>
 
   <div class="nav-group-label">Operação</div>
-<a href="index.html" class="active">Dashboard</a>
+<a href="index.html">Dashboard</a>
 <a href="add-toner.html">Adicionar Toner</a>
 <a href="stock.html">Stock</a>
 <a href="historico.html">Histórico</a>
@@ -41,31 +41,25 @@
 <a href="pistolas.html">Pistolas CK65</a>
 
   <div class="nav-group-label">Administração</div>
-<a href="users.html">Users</a>
+<a href="users.html" class="active">Users</a>
 <a href="config.html">Configurações</a>
 </aside>
 <main class="main">
 
-  <div class="topbar premium-topbar"><div class="topbar-main"><h1>Centro Operacional</h1><p class="subtitle">Resumo executivo do sistema e atividade recente</p></div><div class="topbar-status"><span class="status-pill">Sistema Online</span><span class="version-pill">v1.8 Premium</span></div></div>
+  <div class="topbar premium-topbar"><div class="topbar-main"><h1>Users</h1><p class="subtitle">Credenciais e utilizadores</p></div><div class="topbar-status"><span class="status-pill">Sistema Online</span><span class="version-pill">v1.8 Premium</span></div></div>
   <div class="stats-grid">
-    <div class="stat-card"><span>Stock</span><strong id="countStock">0</strong></div>
-    <div class="stat-card"><span>Usados</span><strong id="countUsados">0</strong></div>
-    <div class="stat-card"><span>PCs</span><strong id="countPCs">0</strong></div>
+    <div class="stat-card"><span>Total</span><strong id="countUsers">0</strong></div>
+    <div class="stat-card"><span>Com MO365</span><strong id="countUsersMO365">0</strong></div>
+    <div class="stat-card"><span>Com Pistola</span><strong id="countUsersPistola">0</strong></div>
+    <div class="stat-card"><span>Com TeamViewer</span><strong id="countUsersTV">0</strong></div>
   </div>
-
   <div class="panel">
-    <div class="section-header">
-      <div>
-        <h3>Resumo Inteligente</h3>
-        <p class="section-subtitle">Visão rápida por criticidade, localizações e atividade recente.</p>
-      </div>
+    <div class="toolbar">
+      <input id="searchUsers" type="text" placeholder="Pesquisar..." oninput="filtrarUsersComFiltros()">
+      <select id="filterUsersMO365" onchange="filtrarUsersComFiltros()"><option value="">MO365: Todos</option><option value="sim">Com MO365</option><option value="nao">Sem MO365</option></select>
+      <select id="filterUsersPistola" onchange="filtrarUsersComFiltros()"><option value="">Pistola: Todos</option><option value="sim">Com Pistola</option><option value="nao">Sem Pistola</option></select>
     </div>
-    <div id="dashboardResumoInteligente" class="cards-list"></div>
-  </div>
-
-  <div class="panel">
-    <div class="toolbar"><input id="searchDashboard" type="text" placeholder="Pesquisar toners..." oninput="filtrarDashboard()"></div>
-    <div id="listaDashboardStock" class="cards-list"></div>
+    <div id="listaUsers" class="cards-list"></div>
   </div>
 
 </main>

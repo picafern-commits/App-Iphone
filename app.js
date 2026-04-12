@@ -9,6 +9,51 @@ if (!firebase.apps.length) {
 }
 const db = firebase.firestore();
 
+
+const BACKUP_KEYS_APP_BRAGA = {
+  stock: "appBraga_backup_stock",
+  historico: "appBraga_backup_historico",
+  pcs: "appBraga_backup_pcs",
+  manutencoes: "appBraga_backup_manutencoes"
+};
+
+function saveBackupAppBraga(key, data) {
+  try {
+    localStorage.setItem(key, JSON.stringify(data || []));
+  } catch (e) {
+    console.error("Erro backup local:", e);
+  }
+}
+
+function loadBackupAppBraga(key) {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    console.error("Erro a ler backup local:", e);
+    return [];
+  }
+}
+
+function showBackupBadge() {
+  document.querySelectorAll(".version-pill").forEach(node => {
+    if (!node.dataset.backupShown) {
+      node.dataset.backupShown = "1";
+      node.innerHTML = `${node.textContent} <span class="backup-badge">Backup local</span>`;
+    }
+  });
+}
+
+function hideBackupBadge() {
+  document.querySelectorAll(".version-pill").forEach(node => {
+    if (node.dataset.backupShown === "1") {
+      node.dataset.backupShown = "";
+      node.textContent = node.textContent.replace(" Backup local", "").trim();
+      if (typeof APP_BRAGA_VERSION !== "undefined") node.textContent = APP_BRAGA_VERSION;
+    }
+  });
+}
+
 let stockGlobal = [];
 let historicoGlobal = [];
 let pcsGlobal = [];
@@ -23,8 +68,8 @@ function setText(id, value) {
   if (node) node.innerText = value;
 }
 
-function normalizarTexto(v) {
-  return String(v || "").toLowerCase().trim();
+function normalizarTexto(valor) {
+  return String(valor || "").toLowerCase().trim();
 }
 
 function mostrarMensagem(texto, tipo = "sucesso") {
@@ -47,65 +92,6 @@ function mostrarMensagem(texto, tipo = "sucesso") {
   }, 2200);
 }
 
-function abrirMenu() {
-  el("mobileSidebar")?.classList.add("open");
-  el("mobileOverlay")?.classList.add("show");
-}
-
-function fecharMenu() {
-  el("mobileSidebar")?.classList.remove("open");
-  el("mobileOverlay")?.classList.remove("show");
-}
-
-function mudarPagina(p) {
-  const paginas = [
-    "dashboard",
-    "registoPage",
-    "stockPage",
-    "historicoPage",
-    "computadores",
-    "impressorasLista",
-    "manutencaoImpressoras",
-    "pistolasPage",
-    "portasPage",
-    "usersPage",
-    "config"
-  ];
-
-  paginas.forEach(id => {
-    const sec = el(id);
-    if (sec) sec.style.display = "none";
-  });
-
-  const atual = el(p);
-  if (atual) atual.style.display = "block";
-
-  const subtitulos = {
-    dashboard: "Dashboard Toners",
-    registoPage: "Registo Toners",
-    stockPage: "Toners disponíveis",
-    historicoPage: "Toners usados",
-    computadores: "Checklist de instalação",
-    impressorasLista: "Lista de impressoras",
-    manutencaoImpressoras: "Pedidos de manutenção",
-    pistolasPage: "Pistolas CK65",
-    portasPage: "Portas de rede",
-    usersPage: "Utilizadores",
-    config: "Preferências"
-  };
-
-  if (el("headerSubtitle")) {
-    el("headerSubtitle").innerText = subtitulos[p] || "Gestão móvel";
-  }
-
-  if (p === "computadores") carregarChecklist();
-  fecharMenu();
-}
-
-function irParaPagina(p) {
-  mudarPagina(p);
-}
-
 /* =========================
    DADOS IMPRESSORAS
 ========================= */
@@ -123,11 +109,26 @@ const impressorasData = [
   { modelo: "TASKalfa 2554ci", serie: "RVP0Z03770", armazem: "Braga", localizacao: "Escritorio", ip: "192.168.10.197" },
   { modelo: "Kyocera P3155dn", serie: "R4B1293169", armazem: "Vila Real", localizacao: "Ilha 01", ip: "192.168.11.110" },
   { modelo: "Kyocera P3155dn", serie: "R4B1293174", armazem: "Vila Real", localizacao: "Ilha 02", ip: "192.168.11.108" },
-  { modelo: "TASKalfa 2554ci", serie: "RVP0Z03715", armazem: "Vila Real", localizacao: "Ilha 03", ip: "192.168.11.201" }
+  { modelo: "TASKalfa 2554ci", serie: "RVP0Z03715", armazem: "Vila Real", localizacao: "Ilha 03", ip: "192.168.11.197" }
+];
+
+const manutencaoLocais = [
+  "Ilha 01",
+  "Ilha 02",
+  "Ilha 03",
+  "Ilha 04",
+  "Ilha 05",
+  "Balcão 01",
+  "Balcão 02",
+  "Dep. Logistica",
+  "G/Encomendas",
+  "Devoluções",
+  "Escritorio"
 ];
 
 /* =========================
-   DADOS PISTOLAS
+   DADOS PISTOLAS CK65
+   (SEM RÁDIOS)
 ========================= */
 const pistolasData = [
   { num: 01, nome: "BRA01", password: "123456", cn: "CK65-L0N-BSC210E", sn: "25105D81B7", mac: "0C:23:69:ED:7D:05", operador: "Márcio Vilela", armazem: "Vila Real", prontas: "2026-01-12", estado: "" },
@@ -181,7 +182,7 @@ const pistolasData = [
 ];
 
 /* =========================
-   DADOS PORTAS
+   DADOS PORTAS DE REDE
 ========================= */
 const portasData = [
   { porta: "127", local: "Ilha 01", user: "Mesa 01", equipamento: "", ip: "" },
@@ -274,8 +275,8 @@ const portasData = [
   { porta: "314", local: "Escritorio", user: "Elisabete Silva", equipamento: "", ip: "" },
   { porta: "313", local: "Escritorio", user: "Elisabete Silva", equipamento: "Computador", ip: "" },
 
-  { porta: "318", local: "Escritorio", user: "Claudia Silva", equipamento: "", ip: "" },
-  { porta: "317", local: "Escritorio", user: "Claudia Silva", equipamento: "Computador", ip: "" },
+  { porta: "318", local: "Escritorio", user: "Caudia Silva", equipamento: "", ip: "" },
+  { porta: "317", local: "Escritorio", user: "Caudia Silva", equipamento: "Computador", ip: "" },
 
   { porta: "322", local: "Escritorio", user: "Lucinda Santos", equipamento: "", ip: "" },
   { porta: "321", local: "Escritorio", user: "Lucinda Santos", equipamento: "Computador", ip: "" },
@@ -303,36 +304,6 @@ const portasData = [
    DADOS USERS
 ========================= */
 const usersData = [
-  {
-    nome: "Pedro José Peixoto Machado",
-    zona: "Resp Armazém",
-    user_pc_eye: "PJPMachado",
-    pass_remote: "pmachado",
-    pass_eye_peak: "",
-    op_pistola: "PJPMachadoP",
-    pass_pistola: "123456",
-    nome_pc: "PJPMachado-PT",
-    teamviewer: "1719798838",
-    user_mo365: "pedro-machado@autozitania.onmicrosoft.com",
-    pw_mo365: "Mug97628",
-    email_bragalis: "pmachado@bragalis.com",
-    pass_bragalis: "Brg25lis_1!!"
-  },
-  {
-    nome: "Rafael Gonçalves Silva",
-    zona: "Armazém/Logistica",
-    user_pc_eye: "RGSSilva",
-    pass_remote: "RGS07",
-    pass_eye_peak: "RGSSilva",
-    op_pistola: "RGSilvaP",
-    pass_pistola: "rgs07",
-    nome_pc: "",
-    teamviewer: "",
-    user_mo365: "",
-    pw_mo365: "",
-    email_bragalis: "",
-    pass_bragalis: ""
-  },
   {
     nome: "Aguinaldo Enoque de Oliveira Epalanga",
     zona: "Armazém",
@@ -784,6 +755,21 @@ const usersData = [
     pass_bragalis: ""
   },
   {
+    nome: "Pedro José Peixoto Machado",
+    zona: "Resp Armazém",
+    user_pc_eye: "PJPMachado",
+    pass_remote: "pmachado",
+    pass_eye_peak: "",
+    op_pistola: "PJPMachadoP",
+    pass_pistola: "123456",
+    nome_pc: "PJPMachado-PT",
+    teamviewer: "1719798838",
+    user_mo365: "pedro-machado@autozitania.onmicrosoft.com",
+    pw_mo365: "Mug97628",
+    email_bragalis: "pmachado@bragalis.com",
+    pass_bragalis: "Brg25lis_1!!"
+  },
+  {
     nome: "Rafael David Martins Cunha",
     zona: "Armazém",
     user_pc_eye: "RDMCunha",
@@ -791,6 +777,21 @@ const usersData = [
     pass_eye_peak: "",
     op_pistola: "RDMCunhaP",
     pass_pistola: "rdmc05",
+    nome_pc: "",
+    teamviewer: "",
+    user_mo365: "",
+    pw_mo365: "",
+    email_bragalis: "",
+    pass_bragalis: ""
+  },
+  {
+    nome: "Rafael Gonçalves Silva",
+    zona: "Armazém/Logistica",
+    user_pc_eye: "RGSSilva",
+    pass_remote: "RGS07",
+    pass_eye_peak: "RGSSilva",
+    op_pistola: "RGSilvaP",
+    pass_pistola: "rgs07",
     nome_pc: "",
     teamviewer: "",
     user_mo365: "",
@@ -1191,8 +1192,128 @@ const usersData = [
 ];
 
 /* =========================
-   FIREBASE
+   IMPRESSORAS / MANUTENÇÃO
 ========================= */
+function obterEstadoImpressora(ip) {
+  const relacionados = manutencoesGlobal.filter(m => m.ip === ip);
+  if (!relacionados.length) return "OK";
+  return relacionados[0].estado || "OK";
+}
+
+function badgeEstado(estado) {
+  if (estado === "Pendente") return `<span class="badge pendente">Pendente</span>`;
+  if (estado === "Em reparação") return `<span class="badge reparacao">Em reparação</span>`;
+  if (estado === "Resolvido") return `<span class="badge resolvido">Resolvido</span>`;
+  return `<span class="badge ok">OK</span>`;
+}
+
+function abrirIP(ip) {
+  window.open(`http://${ip}`, "_blank");
+}
+
+function abrirManutencaoDireta(item) {
+  localStorage.setItem("manutencaoPreenchida", JSON.stringify(item));
+  window.location.href = "manutencao-impressoras.html";
+}
+
+function mapModeloManutencao(modelo) {
+  if (modelo === "Kyocera P3155dn") return "P3155DN";
+  if (modelo === "TASKalfa 2554ci") return "TASKalfa_255ci";
+  if (modelo === "Ecosys PA5500x") return "PA5500x";
+  return modelo;
+}
+
+function sincronizarCamposImpressora() {
+  const serie = el("manutencaoSerie")?.value || "";
+  const ip = el("manutencaoIP")?.value || "";
+
+  if (serie) {
+    const item = impressorasData.find(i => i.serie === serie);
+    if (item) {
+      if (el("manutencaoModelo")) el("manutencaoModelo").value = mapModeloManutencao(item.modelo);
+      if (el("manutencaoArmazem")) el("manutencaoArmazem").value = item.armazem;
+      if (el("manutencaoLocalizacao")) el("manutencaoLocalizacao").value = item.localizacao;
+      if (el("manutencaoIP")) el("manutencaoIP").value = item.ip;
+      return;
+    }
+  }
+
+  if (ip) {
+    const item = impressorasData.find(i => i.ip === ip);
+    if (item) {
+      if (el("manutencaoModelo")) el("manutencaoModelo").value = mapModeloManutencao(item.modelo);
+      if (el("manutencaoArmazem")) el("manutencaoArmazem").value = item.armazem;
+      if (el("manutencaoLocalizacao")) el("manutencaoLocalizacao").value = item.localizacao;
+      if (el("manutencaoSerie")) el("manutencaoSerie").value = item.serie;
+    }
+  }
+}
+
+function preencherLocaisManutencao() {
+  const selectLoc = el("manutencaoLocalizacao");
+  if (selectLoc) {
+    selectLoc.innerHTML = `
+      <option value="">Selecionar localização</option>
+      ${manutencaoLocais.map(loc => `<option value="${loc}">${loc}</option>`).join("")}
+    `;
+  }
+
+  const selectIP = el("manutencaoIP");
+  if (selectIP) {
+    selectIP.innerHTML = `
+      <option value="">Selecionar IP</option>
+      ${impressorasData.map(item => `
+        <option value="${item.ip}">
+          ${item.ip} - ${item.localizacao} (${item.armazem})
+        </option>
+      `).join("")}
+    `;
+  }
+
+  const selectSerie = el("manutencaoSerie");
+  if (selectSerie) {
+    selectSerie.innerHTML = `
+      <option value="">Selecionar nº série</option>
+      ${impressorasData.map(item => `
+        <option value="${item.serie}">${item.serie}</option>
+      `).join("")}
+    `;
+  }
+}
+
+function preencherFormularioManutencao() {
+  const dados = localStorage.getItem("manutencaoPreenchida");
+  if (!dados) return;
+
+  try {
+    const item = JSON.parse(dados);
+
+    if (el("manutencaoModelo")) el("manutencaoModelo").value = mapModeloManutencao(item.modelo);
+    if (el("manutencaoSerie")) el("manutencaoSerie").value = item.serie || "";
+    if (el("manutencaoArmazem")) el("manutencaoArmazem").value = item.armazem || "";
+    if (el("manutencaoLocalizacao")) el("manutencaoLocalizacao").value = item.localizacao || "";
+    if (el("manutencaoIP")) el("manutencaoIP").value = item.ip || "";
+    if (el("manutencaoEstado")) el("manutencaoEstado").value = "Pendente";
+
+    localStorage.removeItem("manutencaoPreenchida");
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+function limparFormularioManutencao() {
+  if (el("manutencaoTecnico")) el("manutencaoTecnico").value = "";
+  if (el("manutencaoEstado")) el("manutencaoEstado").value = "Pendente";
+  if (el("manutencaoArmazem")) el("manutencaoArmazem").value = "";
+  if (el("manutencaoLocalizacao")) el("manutencaoLocalizacao").value = "";
+  if (el("manutencaoModelo")) el("manutencaoModelo").value = "";
+  if (el("manutencaoSerie")) el("manutencaoSerie").value = "";
+  if (el("manutencaoIP")) el("manutencaoIP").value = "";
+  if (el("manutencaoPedido")) el("manutencaoPedido").value = "";
+  if (el("manutencaoResolucao")) el("manutencaoResolucao").value = "";
+  if (el("manutencaoMotivo")) el("manutencaoMotivo").value = "";
+}
+
 async function gerarID() {
   const ref = db.collection("config").doc("contador");
   return db.runTransaction(async t => {
@@ -1204,12 +1325,19 @@ async function gerarID() {
 }
 
 async function disponivel() {
-  const eq = el("equipamento")?.value;
-  const loc = el("localizacao")?.value;
-  const cor = el("cor")?.value;
-  const data = el("data")?.value;
+  const equipamento = el("equipamento");
+  const localizacao = el("localizacao");
+  const cor = el("cor");
+  const data = el("data");
 
-  if (!eq || !cor) {
+  if (!equipamento || !cor) return;
+
+  const eq = equipamento.value;
+  const loc = localizacao ? localizacao.value : "";
+  const corValue = cor.value;
+  const dataValue = data ? data.value : "";
+
+  if (!eq || !corValue) {
     mostrarMensagem("Preenche o equipamento e a cor.", "erro");
     return;
   }
@@ -1221,20 +1349,22 @@ async function disponivel() {
       idInterno: id,
       equipamento: eq,
       localizacao: loc || "Sem Localização",
-      cor,
-      data: data || "Sem Data",
+      cor: corValue,
+      data: dataValue || "Sem Data",
+      dataFolha: (el("dataFolha") && el("dataFolha").value) || "Sem Data da Folha",
       created: new Date()
     });
 
-    if (el("equipamento")) el("equipamento").value = "";
-    if (el("localizacao")) el("localizacao").value = "";
-    if (el("cor")) el("cor").value = "";
-    if (el("data")) el("data").value = "";
+    equipamento.value = "";
+    if (localizacao) localizacao.value = "";
+    cor.value = "";
+    if (data) data.value = "";
+    if (el("dataFolha")) el("dataFolha").value = "";
 
-    mostrarMensagem("Toner adicionado");
-  } catch (e) {
-    console.error(e);
-    mostrarMensagem("Erro ao adicionar toner", "erro");
+    mostrarMensagem("Toner adicionado com sucesso.");
+  } catch (error) {
+    console.error(error);
+    mostrarMensagem("Erro ao adicionar toner.", "erro");
   }
 }
 
@@ -1248,8 +1378,19 @@ db.collection("stock").orderBy("created", "desc").onSnapshot(snap => {
     stockGlobal.push(t);
   });
 
-  renderStock();
-  renderDashboard();
+  saveBackupAppBraga(BACKUP_KEYS_APP_BRAGA.stock, stockGlobal);
+  hideBackupBadge();
+  renderDashboardCards(stockGlobal);
+  renderStockCards(stockGlobal);
+  renderDashboardResumoInteligente();
+}, error => {
+  console.error(error);
+  stockGlobal = loadBackupAppBraga(BACKUP_KEYS_APP_BRAGA.stock);
+  setText("countStock", stockGlobal.length);
+  showBackupBadge();
+  renderDashboardCards(stockGlobal);
+  renderStockCards(stockGlobal);
+  renderDashboardResumoInteligente();
 });
 
 db.collection("historico").orderBy("created", "desc").onSnapshot(snap => {
@@ -1262,7 +1403,17 @@ db.collection("historico").orderBy("created", "desc").onSnapshot(snap => {
     historicoGlobal.push(t);
   });
 
-  renderHistorico();
+  saveBackupAppBraga(BACKUP_KEYS_APP_BRAGA.historico, historicoGlobal);
+  hideBackupBadge();
+  renderHistoricoCards(historicoGlobal);
+  renderDashboardResumoInteligente();
+}, error => {
+  console.error(error);
+  historicoGlobal = loadBackupAppBraga(BACKUP_KEYS_APP_BRAGA.historico);
+  setText("countUsados", historicoGlobal.length);
+  showBackupBadge();
+  renderHistoricoCards(historicoGlobal);
+  renderDashboardResumoInteligente();
 });
 
 db.collection("pcs").orderBy("created", "desc").onSnapshot(snap => {
@@ -1275,57 +1426,196 @@ db.collection("pcs").orderBy("created", "desc").onSnapshot(snap => {
     pcsGlobal.push(d);
   });
 
-  renderPC();
+  saveBackupAppBraga(BACKUP_KEYS_APP_BRAGA.pcs, pcsGlobal);
+  hideBackupBadge();
+  renderPCCards(pcsGlobal);
+}, error => {
+  console.error(error);
+  pcsGlobal = loadBackupAppBraga(BACKUP_KEYS_APP_BRAGA.pcs);
+  setText("countPCs", pcsGlobal.length);
+  showBackupBadge();
+  renderPCCards(pcsGlobal);
 });
 
 db.collection("manutencoes").orderBy("created", "desc").onSnapshot(snap => {
   manutencoesGlobal = [];
 
   snap.forEach(doc => {
-    const d = doc.data();
-    d.idDoc = doc.id;
-    manutencoesGlobal.push(d);
+    const item = doc.data();
+    item.idDoc = doc.id;
+    manutencoesGlobal.push(item);
   });
 
+  saveBackupAppBraga(BACKUP_KEYS_APP_BRAGA.manutencoes, manutencoesGlobal);
+  hideBackupBadge();
+  atualizarContadoresManutencao();
   renderManutencoes(manutencoesGlobal);
+  renderImpressoras();
+}, error => {
+  console.error(error);
+  manutencoesGlobal = loadBackupAppBraga(BACKUP_KEYS_APP_BRAGA.manutencoes);
+  showBackupBadge();
+  atualizarContadoresManutencao();
+  renderManutencoes(manutencoesGlobal);
+  renderImpressoras();
 });
 
-/* =========================
-   DASHBOARD / STOCK / HISTÓRICO
-========================= */
-function renderDashboard() {
-  const dash = el("listaDashboardStock");
-  if (!dash) return;
-
-  setText("countPistolasDashboard", pistolasData.length);
-  setText("countPortasDashboard", portasData.length);
-  setText("countUsersDashboard", usersData.length);
-
-  if (!stockGlobal.length) {
-    dash.innerHTML = `<div class="panel empty-state"><h3>Sem toners recentes</h3><p>Adiciona toners para os veres aqui.</p></div>`;
-    return;
-  }
-
-  dash.innerHTML = stockGlobal.slice(0, 5).map(t => `
-    <div class="dashboard-card">
-      <div class="stock-id">${t.idInterno}</div>
-      <div class="meta-line">Equipamento: <span class="meta-value">${t.equipamento}</span></div>
-      <div class="meta-line">Cor: <span class="meta-value">${t.cor}</span></div>
-      <div class="meta-line">Local: <span class="meta-value">${t.localizacao}</span></div>
-    </div>
-  `).join("");
+function atualizarContadoresManutencao() {
+  setText("countManutTotal", manutencoesGlobal.length);
+  setText("countManutPendentes", manutencoesGlobal.filter(i => i.estado === "Pendente").length);
+  setText("countManutReparacao", manutencoesGlobal.filter(i => i.estado === "Em reparação").length);
+  setText("countManutResolvidos", manutencoesGlobal.filter(i => i.estado === "Resolvido").length);
 }
 
-function renderStock(lista = stockGlobal) {
-  const box = el("listaStock");
-  if (!box) return;
 
-  if (!lista.length) {
-    box.innerHTML = `<div class="panel empty-state"><h3>Sem toners em stock</h3><p>Quando adicionares toners, aparecem aqui.</p></div>`;
+function getCriticalityBucketsAppBraga() {
+  let critical = 0;
+  let warning = 0;
+  let normal = 0;
+
+  impressorasData.forEach(item => {
+    const info = tonerInfoState[item.ip] || null;
+    const colors = Array.isArray(info?.colors) ? info.colors : [];
+    const monoPercent = typeof info?.percent === "number" ? info.percent : null;
+    const allPercents = colors.map(c => c.percent).filter(v => typeof v === "number");
+    if (!allPercents.length && monoPercent !== null) allPercents.push(monoPercent);
+
+    if (!allPercents.length) {
+      normal++;
+      return;
+    }
+
+    const minValue = Math.min(...allPercents);
+    if (minValue < 10) critical++;
+    else if (minValue <= 25) warning++;
+    else normal++;
+  });
+
+  return { critical, warning, normal };
+}
+
+function getTopLocalizacoesHistorico(limit = 3) {
+  const counts = {};
+  historicoGlobal.forEach(item => {
+    const key = String(item.localizacao || "Sem Localização");
+    counts[key] = (counts[key] || 0) + 1;
+  });
+  return Object.entries(counts)
+    .sort((a,b) => b[1] - a[1])
+    .slice(0, limit);
+}
+
+function getUltimosMovimentos(limit = 3) {
+  return [...historicoGlobal]
+    .sort((a,b) => {
+      const ad = a.created && a.created.seconds ? a.created.seconds : 0;
+      const bd = b.created && b.created.seconds ? b.created.seconds : 0;
+      return bd - ad;
+    })
+    .slice(0, limit);
+}
+
+function renderDashboardResumoInteligente() {
+  const host = el("dashboardResumoInteligente");
+  if (!host) return;
+
+  const buckets = getCriticalityBucketsAppBraga();
+  const topLocs = getTopLocalizacoesHistorico(3);
+  const ultimos = getUltimosMovimentos(3);
+
+  host.innerHTML = `
+    <div class="summary-grid">
+      <div class="summary-card">
+        <h4>Criticidade Real</h4>
+        <div class="summary-value">${buckets.critical}</div>
+        <div class="meta-line">Críticas &lt; 10%</div>
+      </div>
+      <div class="summary-card">
+        <h4>Atenção</h4>
+        <div class="summary-value">${buckets.warning}</div>
+        <div class="meta-line">Entre 10% e 25%</div>
+      </div>
+      <div class="summary-card">
+        <h4>Top Localizações</h4>
+        <ul class="summary-list">
+          ${topLocs.length ? topLocs.map(([k,v]) => `<li>${k} — ${v}</li>`).join("") : "<li>Sem dados</li>"}
+        </ul>
+      </div>
+      <div class="summary-card">
+        <h4>Últimos Movimentos</h4>
+        <ul class="summary-list">
+          ${ultimos.length ? ultimos.map(item => `<li>${item.equipamento || "-"} · ${item.cor || "-"} · ${item.localizacao || "-"}</li>`).join("") : "<li>Sem histórico</li>"}
+        </ul>
+      </div>
+    </div>
+  `;
+}
+
+function renderDashboardCards(items) {
+  const lista = el("listaDashboardStock");
+  if (!lista) return;
+
+  const searchTxt = normalizarTexto(el("searchDashboard")?.value || "");
+
+  const criticas = impressorasData.map(item => {
+    const info = tonerInfoState[item.ip] || null;
+    const colors = Array.isArray(info?.colors) ? info.colors : [];
+    const residue = info?.residue || null;
+
+    const criticalColors = colors.filter(c => typeof c.percent === "number" && c.percent <= 25);
+    const monoPercent = typeof info?.percent === "number" ? info.percent : null;
+    const monoCritical = colors.length === 0 && monoPercent !== null && monoPercent <= 25;
+
+    const isCritical = criticalColors.length > 0 || monoCritical;
+    return { item, info, criticalColors, monoCritical, residue, isCritical };
+  }).filter(entry => entry.isCritical).filter(entry => {
+    if (!searchTxt) return true;
+    const haystack = [
+      entry.item.modelo,
+      entry.item.serie,
+      entry.item.ip,
+      entry.item.localizacao,
+      entry.item.armazem,
+      ...(entry.criticalColors || []).map(c => c.label),
+      entry.monoCritical ? "Preto" : ""
+    ].join(" ");
+    return normalizarTexto(haystack).includes(searchTxt);
+  });
+
+  if (!criticas.length) {
+    lista.innerHTML = `<div class="panel empty-state"><h3>Sem impressoras críticas</h3><p>As impressoras com toner a 25% ou menos vão aparecer aqui automaticamente.</p></div>`;
     return;
   }
 
-  box.innerHTML = lista.map(t => `
+  lista.innerHTML = criticas.map(({ item, info, criticalColors, monoCritical, residue }) => {
+    const supplyHtml = criticalColors.length
+      ? criticalColors.map(c => gerarHTMLBarraToner(c.percent, c.label, c.key)).join("")
+      : (monoCritical ? gerarHTMLBarraToner(info.percent, "Preto", "black") : "");
+
+    const residueHtml = residue ? gerarHTMLBarraToner(residue.percent, residue.label || "Resíduo", "waste") : "";
+
+    return `
+      <div class="dashboard-card dashboard-critical-card">
+        <div class="stock-id">${item.modelo}</div>
+        <div class="meta-line">Série: <span class="meta-value">${item.serie}</span></div>
+        <div class="meta-line">Local: <span class="meta-value">${item.localizacao} (${item.armazem})</span></div>
+        <div class="meta-line">IP: <span class="meta-value">${item.ip}</span></div>
+        <div class="printer-toners-grid" style="margin-top:10px;">${supplyHtml}${residueHtml}</div>
+      </div>
+    `;
+  }).join("");
+}
+
+function renderStockCards(items) {
+  const lista = el("listaStock");
+  if (!lista) return;
+
+  if (!items.length) {
+    lista.innerHTML = `<div class="panel empty-state"><h3>Sem toners em stock</h3><p>Quando adicionares toners, aparecem aqui.</p></div>`;
+    return;
+  }
+
+  lista.innerHTML = items.map(t => `
     <div class="stock-card">
       <div class="stock-id">${t.idInterno}</div>
       <div class="meta-line">Equipamento: <span class="meta-value">${t.equipamento}</span></div>
@@ -1333,22 +1623,23 @@ function renderStock(lista = stockGlobal) {
       <div class="meta-line">Localização: <span class="meta-value">${t.localizacao}</span></div>
       <div class="meta-line">Data: <span class="meta-value">${t.data || "Sem Data"}</span></div>
       <div class="card-actions">
-        <button class="small-btn btn-use" onclick="usar('${t.idDoc}')">Usado</button>
+        <button class="small-btn btn-use" onclick="usar('${t.idDoc}')">Marcar usado</button>
+        <button class="small-btn btn-edit" onclick="editar('${t.idDoc}')">Editar</button>
       </div>
     </div>
   `).join("");
 }
 
-function renderHistorico(lista = historicoGlobal) {
-  const box = el("listaHistorico");
-  if (!box) return;
+function renderHistoricoCards(items) {
+  const lista = el("listaHistorico");
+  if (!lista) return;
 
-  if (!lista.length) {
-    box.innerHTML = `<div class="panel empty-state"><h3>Sem histórico</h3><p>Os toners usados aparecem aqui.</p></div>`;
+  if (!items.length) {
+    lista.innerHTML = `<div class="panel empty-state"><h3>Sem histórico</h3><p>Os toners usados vão aparecer aqui.</p></div>`;
     return;
   }
 
-  box.innerHTML = lista.map(t => `
+  lista.innerHTML = items.map(t => `
     <div class="history-card">
       <div class="history-id">${t.idInterno}</div>
       <div class="meta-line">Equipamento: <span class="meta-value">${t.equipamento}</span></div>
@@ -1367,60 +1658,77 @@ async function usar(id) {
     const ref = db.collection("stock").doc(id);
     const snap = await ref.get();
 
+    if (!snap.exists) {
+      mostrarMensagem("Toner não encontrado.", "erro");
+      return;
+    }
+
     await db.collection("historico").add({
       ...snap.data(),
       created: new Date()
     });
 
     await ref.delete();
-    mostrarMensagem("Movido para histórico");
-  } catch (e) {
-    console.error(e);
-    mostrarMensagem("Erro ao mover", "erro");
+    mostrarMensagem("Toner movido para histórico.");
+  } catch (error) {
+    console.error(error);
+    mostrarMensagem("Erro ao mover para histórico.", "erro");
   }
 }
 
 async function apagar(id) {
   try {
     await db.collection("historico").doc(id).delete();
-    mostrarMensagem("Apagado");
-  } catch (e) {
-    console.error(e);
-    mostrarMensagem("Erro ao apagar", "erro");
+    mostrarMensagem("Histórico apagado.");
+  } catch (error) {
+    console.error(error);
+    mostrarMensagem("Erro ao apagar.", "erro");
   }
 }
 
+function editar(id) {
+  const t = stockGlobal.find(x => x.idDoc === id);
+  if (!t) return;
+
+  localStorage.setItem("editarToner", JSON.stringify(t));
+  window.location.href = "add-toner.html";
+}
+
+function exportar() {
+  if (!stockGlobal.length) {
+    mostrarMensagem("Não há dados para exportar.", "erro");
+    return;
+  }
+
+  let csv = "ID;Equipamento;Localização;Cor;Data\n";
+  stockGlobal.forEach(t => {
+    csv += `${t.idInterno};${t.equipamento};${t.localizacao};${t.cor};${t.data || ""}\n`;
+  });
+
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "stock.csv";
+  a.click();
+}
+
 function filtrar() {
-  const txt = normalizarTexto(el("search")?.value || "");
+  const input = el("search");
+  if (!input) return;
+
+  const txt = input.value.toLowerCase();
   const filtrados = stockGlobal.filter(t =>
-    normalizarTexto(t.localizacao).includes(txt) ||
+    normalizarTexto(t.idInterno).includes(txt) ||
     normalizarTexto(t.equipamento).includes(txt) ||
     normalizarTexto(t.cor).includes(txt) ||
-    normalizarTexto(t.idInterno).includes(txt)
+    normalizarTexto(t.localizacao).includes(txt)
   );
-  renderStock(filtrados);
+
+  renderStockCards(filtrados);
 }
 
 function filtrarDashboard() {
-  const txt = normalizarTexto(el("searchDashboard")?.value || "");
-  const filtrados = stockGlobal.filter(t =>
-    normalizarTexto(t.localizacao).includes(txt) ||
-    normalizarTexto(t.equipamento).includes(txt) ||
-    normalizarTexto(t.cor).includes(txt) ||
-    normalizarTexto(t.idInterno).includes(txt)
-  );
-
-  const dash = el("listaDashboardStock");
-  if (!dash) return;
-
-  dash.innerHTML = filtrados.map(t => `
-    <div class="dashboard-card">
-      <div class="stock-id">${t.idInterno}</div>
-      <div class="meta-line">Equipamento: <span class="meta-value">${t.equipamento}</span></div>
-      <div class="meta-line">Cor: <span class="meta-value">${t.cor}</span></div>
-      <div class="meta-line">Local: <span class="meta-value">${t.localizacao}</span></div>
-    </div>
-  `).join("");
+  renderDashboardCards();
 }
 
 /* =========================
@@ -1442,10 +1750,10 @@ const passos = [
 ];
 
 function carregarChecklist() {
-  const check = el("checklist");
-  if (!check) return;
+  const checklist = el("checklist");
+  if (!checklist) return;
 
-  check.innerHTML = passos.map((p, i) => `
+  checklist.innerHTML = passos.map((p, i) => `
     <label class="checkItem">
       <input type="checkbox" id="p${i}">
       <span>${p}</span>
@@ -1453,16 +1761,16 @@ function carregarChecklist() {
   `).join("");
 }
 
-function renderPC() {
-  const box = el("listaPC");
-  if (!box) return;
+function renderPCCards(items) {
+  const lista = el("listaPC");
+  if (!lista) return;
 
-  if (!pcsGlobal.length) {
-    box.innerHTML = `<div class="panel empty-state"><h3>Sem registos de computadores</h3><p>Os computadores guardados aparecem aqui.</p></div>`;
+  if (!items.length) {
+    lista.innerHTML = `<div class="panel empty-state"><h3>Sem registos de computadores</h3><p>Os computadores guardados aparecem aqui.</p></div>`;
     return;
   }
 
-  box.innerHTML = pcsGlobal.map(d => {
+  lista.innerHTML = items.map(d => {
     const htmlPassos = (d.passos || []).map(p => `
       <div class="meta-line">${p.feito ? "✔" : "❌"} <span class="meta-value">${p.passo}</span></div>
     `).join("");
@@ -1471,7 +1779,9 @@ function renderPC() {
       <div class="pc-card">
         <div class="pc-name">${d.nome}</div>
         <div class="meta-line">Data: <span class="meta-value">${d.data || "Sem Data"}</span></div>
-        <div class="pc-meta" style="margin-top:12px;">${htmlPassos}</div>
+        <div class="pc-meta" style="margin-top:12px;">
+          ${htmlPassos}
+        </div>
         <div class="card-actions">
           <button class="small-btn btn-delete" onclick="apagarPC('${d.idDoc}')">Apagar</button>
         </div>
@@ -1481,20 +1791,28 @@ function renderPC() {
 }
 
 async function guardarPC() {
-  const nome = el("nomePC")?.value;
-  let data = el("dataPC")?.value;
+  const nomePC = el("nomePC");
+  const dataPC = el("dataPC");
+
+  if (!nomePC) return;
+
+  const nome = nomePC.value.trim();
+  let data = dataPC ? dataPC.value : "";
 
   if (!nome) {
-    mostrarMensagem("Nome obrigatório", "erro");
+    mostrarMensagem("Nome obrigatório.", "erro");
     return;
   }
 
   if (!data) data = "Sem Data";
 
-  const dados = passos.map((p, i) => ({
-    passo: p,
-    feito: el("p" + i)?.checked || false
-  }));
+  const dados = [];
+  passos.forEach((p, i) => {
+    dados.push({
+      passo: p,
+      feito: el("p" + i)?.checked || false
+    });
+  });
 
   try {
     await db.collection("pcs").add({
@@ -1504,139 +1822,42 @@ async function guardarPC() {
       created: new Date()
     });
 
-    if (el("nomePC")) el("nomePC").value = "";
-    if (el("dataPC")) el("dataPC").value = "";
+    nomePC.value = "";
+    if (dataPC) dataPC.value = "";
     carregarChecklist();
-    mostrarMensagem("PC guardado");
-  } catch (e) {
-    console.error(e);
-    mostrarMensagem("Erro ao guardar PC", "erro");
+    mostrarMensagem("Computador guardado com sucesso.");
+  } catch (error) {
+    console.error(error);
+    mostrarMensagem("Erro ao guardar computador.", "erro");
   }
 }
 
 async function apagarPC(id) {
   try {
     await db.collection("pcs").doc(id).delete();
-    mostrarMensagem("PC apagado");
-  } catch (e) {
-    console.error(e);
-    mostrarMensagem("Erro ao apagar PC", "erro");
+    mostrarMensagem("Registo apagado.");
+  } catch (error) {
+    console.error(error);
+    mostrarMensagem("Erro ao apagar registo.", "erro");
   }
 }
 
 /* =========================
-   IMPRESSORAS / MANUTENÇÃO
+   MANUTENÇÃO
 ========================= */
-function renderImpressoras() {
-  const tbody = el("impressorasTableBody");
-  if (!tbody) return;
-
-  tbody.innerHTML = impressorasData.map(item => `
-    <tr>
-      <td>${item.modelo}</td>
-      <td>${item.serie}</td>
-      <td>${item.armazem}</td>
-      <td>${item.localizacao}</td>
-      <td><a href="http://${item.ip}" target="_blank" rel="noopener noreferrer">${item.ip}</a></td>
-    </tr>
-  `).join("");
-}
-
-function modelosPorArmazem(armazem) {
-  const lista = !armazem
-    ? impressorasData
-    : impressorasData.filter(i => i.armazem === armazem);
-
-  return [...new Set(lista.map(i => i.modelo))];
-}
-
-function preencherDropdownManutencao() {
-  const armazem = el("manutencaoArmazem")?.value || "";
-  const modeloSelect = el("manutencaoModelo");
-  const serieSelect = el("manutencaoSerie");
-  const locSelect = el("manutencaoLocalizacao");
-  const ipSelect = el("manutencaoIP");
-
-  if (!modeloSelect || !serieSelect || !locSelect || !ipSelect) return;
-
-  const modelos = modelosPorArmazem(armazem);
-
-  modeloSelect.innerHTML = `
-    <option value="">Selecionar modelo</option>
-    ${modelos.map(m => `<option value="${m}">${m}</option>`).join("")}
-  `;
-
-  serieSelect.innerHTML = `<option value="">Selecionar nº série</option>`;
-  locSelect.innerHTML = `<option value="">Selecionar localização</option>`;
-  ipSelect.innerHTML = `<option value="">Selecionar IP</option>`;
-}
-
-function sincronizarManutencaoPorArmazem() {
-  preencherDropdownManutencao();
-}
-
-function sincronizarManutencaoPorModelo() {
-  const armazem = el("manutencaoArmazem")?.value || "";
-  const modelo = el("manutencaoModelo")?.value || "";
-  const serieSelect = el("manutencaoSerie");
-  const locSelect = el("manutencaoLocalizacao");
-  const ipSelect = el("manutencaoIP");
-
-  if (!serieSelect || !locSelect || !ipSelect) return;
-
-  let lista = impressorasData.filter(i => i.modelo === modelo);
-  if (armazem) lista = lista.filter(i => i.armazem === armazem);
-
-  serieSelect.innerHTML = `
-    <option value="">Selecionar nº série</option>
-    ${lista.map(i => `<option value="${i.serie}">${i.serie}</option>`).join("")}
-  `;
-
-  locSelect.innerHTML = `
-    <option value="">Selecionar localização</option>
-    ${lista.map(i => `<option value="${i.localizacao}">${i.localizacao}</option>`).join("")}
-  `;
-
-  ipSelect.innerHTML = `
-    <option value="">Selecionar IP</option>
-    ${lista.map(i => `<option value="${i.ip}">${i.ip}</option>`).join("")}
-  `;
-}
-
-function sincronizarManutencaoPorSerie() {
-  const serie = el("manutencaoSerie")?.value || "";
-  const item = impressorasData.find(i => i.serie === serie);
-  if (!item) return;
-
-  if (el("manutencaoArmazem")) el("manutencaoArmazem").value = item.armazem;
-  if (el("manutencaoModelo")) el("manutencaoModelo").value = item.modelo;
-  if (el("manutencaoLocalizacao")) el("manutencaoLocalizacao").value = item.localizacao;
-  if (el("manutencaoIP")) el("manutencaoIP").value = item.ip;
-}
-
-function sincronizarManutencaoPorIP() {
-  const ip = el("manutencaoIP")?.value || "";
-  const item = impressorasData.find(i => i.ip === ip);
-  if (!item) return;
-
-  if (el("manutencaoArmazem")) el("manutencaoArmazem").value = item.armazem;
-  if (el("manutencaoModelo")) el("manutencaoModelo").value = item.modelo;
-  if (el("manutencaoSerie")) el("manutencaoSerie").value = item.serie;
-  if (el("manutencaoLocalizacao")) el("manutencaoLocalizacao").value = item.localizacao;
-}
-
 async function guardarManutencao() {
   const tecnico = el("manutencaoTecnico")?.value || "";
+  const estado = el("manutencaoEstado")?.value || "Pendente";
   const armazem = el("manutencaoArmazem")?.value || "";
+  const localizacao = el("manutencaoLocalizacao")?.value || "";
   const modelo = el("manutencaoModelo")?.value || "";
   const serie = el("manutencaoSerie")?.value || "";
-  const localizacao = el("manutencaoLocalizacao")?.value || "";
   const ip = el("manutencaoIP")?.value || "";
   const motivo = el("manutencaoMotivo")?.value || "";
   const dataPedido = el("manutencaoPedido")?.value || "";
   const dataResolucao = el("manutencaoResolucao")?.value || "";
 
-  if (!tecnico || !armazem || !modelo || !serie || !localizacao || !ip || !motivo || !dataPedido) {
+  if (!tecnico || !armazem || !localizacao || !modelo || !serie || !ip || !motivo || !dataPedido) {
     mostrarMensagem("Preenche os campos obrigatórios da manutenção.", "erro");
     return;
   }
@@ -1644,10 +1865,11 @@ async function guardarManutencao() {
   try {
     await db.collection("manutencoes").add({
       tecnico,
+      estado,
       armazem,
+      localizacao,
       modelo,
       serie,
-      localizacao,
       ip,
       motivo,
       dataPedido,
@@ -1655,20 +1877,11 @@ async function guardarManutencao() {
       created: new Date()
     });
 
-    if (el("manutencaoTecnico")) el("manutencaoTecnico").value = "";
-    if (el("manutencaoArmazem")) el("manutencaoArmazem").value = "";
-    if (el("manutencaoModelo")) el("manutencaoModelo").innerHTML = `<option value="">Selecionar modelo</option>`;
-    if (el("manutencaoSerie")) el("manutencaoSerie").innerHTML = `<option value="">Selecionar nº série</option>`;
-    if (el("manutencaoLocalizacao")) el("manutencaoLocalizacao").innerHTML = `<option value="">Selecionar localização</option>`;
-    if (el("manutencaoIP")) el("manutencaoIP").innerHTML = `<option value="">Selecionar IP</option>`;
-    if (el("manutencaoMotivo")) el("manutencaoMotivo").value = "";
-    if (el("manutencaoPedido")) el("manutencaoPedido").value = "";
-    if (el("manutencaoResolucao")) el("manutencaoResolucao").value = "";
-
-    mostrarMensagem("Manutenção guardada");
-  } catch (e) {
-    console.error(e);
-    mostrarMensagem("Erro ao guardar manutenção", "erro");
+    limparFormularioManutencao();
+    mostrarMensagem("Manutenção guardada com sucesso.");
+  } catch (error) {
+    console.error(error);
+    mostrarMensagem("Erro ao guardar manutenção.", "erro");
   }
 }
 
@@ -1677,279 +1890,1407 @@ function renderManutencoes(items) {
   if (!lista) return;
 
   if (!items.length) {
-    lista.innerHTML = `<div class="panel empty-state"><h3>Sem pedidos de manutenção</h3><p>Os pedidos vão aparecer aqui.</p></div>`;
+    lista.innerHTML = `
+      <div class="panel empty-state">
+        <h3>Sem pedidos de manutenção</h3>
+        <p>Os pedidos vão aparecer aqui.</p>
+      </div>
+    `;
     return;
   }
 
   lista.innerHTML = items.map(item => `
-    <div class="pc-card">
-      <div class="pc-name">${item.modelo || "-"}</div>
-      <div class="meta-line">Série: <span class="meta-value">${item.serie || "-"}</span></div>
+    <div class="pc-card manut-card">
+      <div class="manut-card-top">
+        <div>
+          <div class="pc-name">${item.modelo || "-"}</div>
+          <div class="meta-line">Série: <span class="meta-value">${item.serie || "-"}</span></div>
+        </div>
+        <div>${badgeEstado(item.estado || "Pendente")}</div>
+      </div>
+
       <div class="meta-line">Técnico: <span class="meta-value">${item.tecnico}</span></div>
       <div class="meta-line">Armazém: <span class="meta-value">${item.armazem}</span></div>
       <div class="meta-line">Localização: <span class="meta-value">${item.localizacao}</span></div>
       <div class="meta-line">IP: <span class="meta-value"><a href="http://${item.ip}" target="_blank" rel="noopener noreferrer">${item.ip}</a></span></div>
-      <div class="meta-line">Motivo: <span class="meta-value">${item.motivo}</span></div>
       <div class="meta-line">Pedido: <span class="meta-value">${item.dataPedido}</span></div>
-      <div class="meta-line">Reparação/Resolução: <span class="meta-value">${item.dataResolucao || "Sem resolução"}</span></div>
+      <div class="meta-line">Resolução: <span class="meta-value">${item.dataResolucao || "Sem resolução"}</span></div>
+      <div class="meta-line">Motivo: <span class="meta-value">${item.motivo}</span></div>
+
       <div class="card-actions">
+        <button class="small-btn btn-use" onclick="marcarResolvido('${item.idDoc}')">Resolver</button>
         <button class="small-btn btn-delete" onclick="apagarManutencao('${item.idDoc}')">Apagar</button>
       </div>
     </div>
   `).join("");
 }
 
-async function apagarManutencao(id) {
+function filtrarManutencoes() {
+  const texto = normalizarTexto(el("searchManutencoes")?.value || "");
+  const estado = el("filterEstadoManutencao")?.value || "";
+  const armazem = el("filterArmazemManutencao")?.value || "";
+
+  const filtradas = manutencoesGlobal.filter(item => {
+    const passaTexto =
+      normalizarTexto(item.modelo).includes(texto) ||
+      normalizarTexto(item.serie).includes(texto) ||
+      normalizarTexto(item.ip).includes(texto) ||
+      normalizarTexto(item.localizacao).includes(texto) ||
+      normalizarTexto(item.motivo).includes(texto);
+
+    const passaEstado = !estado || item.estado === estado;
+    const passaArmazem = !armazem || item.armazem === armazem;
+
+    return passaTexto && passaEstado && passaArmazem;
+  });
+
+  renderManutencoes(filtradas);
+}
+
+async function marcarResolvido(id) {
   try {
-    await db.collection("manutencoes").doc(id).delete();
-    mostrarMensagem("Manutenção apagada");
-  } catch (e) {
-    console.error(e);
-    mostrarMensagem("Erro ao apagar manutenção", "erro");
+    await db.collection("manutencoes").doc(id).update({
+      estado: "Resolvido",
+      dataResolucao: new Date().toISOString().split("T")[0]
+    });
+
+    mostrarMensagem("Manutenção marcada como resolvida.");
+  } catch (error) {
+    console.error(error);
+    mostrarMensagem("Erro ao atualizar manutenção.", "erro");
   }
 }
 
+async function apagarManutencao(id) {
+  try {
+    await db.collection("manutencoes").doc(id).delete();
+    mostrarMensagem("Registo de manutenção apagado.");
+  } catch (error) {
+    console.error(error);
+    mostrarMensagem("Erro ao apagar manutenção.", "erro");
+  }
+}
+
+function carregarEdicaoToner() {
+  const item = localStorage.getItem("editarToner");
+  if (!item || !el("equipamento")) return;
+
+  try {
+    const toner = JSON.parse(item);
+    el("equipamento").value = toner.equipamento || "";
+    el("localizacao").value = toner.localizacao || "";
+    el("cor").value = toner.cor || "";
+    el("data").value = toner.data || "";
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+function extrairPercentagemTonerDoHTML(html) {
+  if (!html) return null;
+
+  const texto = String(html);
+  const linhaPreto = texto.match(/Preto[\s\S]{0,160}?(\d{1,3})\s*%/i) || texto.match(/Black[\s\S]{0,160}?(\d{1,3})\s*%/i);
+  if (linhaPreto) {
+    const valor = parseInt(linhaPreto[1], 10);
+    if (!Number.isNaN(valor) && valor >= 0 && valor <= 100) return valor;
+  }
+
+  const match = texto.match(/(\d{1,3})\s?%/i);
+  if (match) {
+    const valor = parseInt(match[1], 10);
+    if (!Number.isNaN(valor) && valor >= 0 && valor <= 100) return valor;
+  }
+  return null;
+}
+
+const tonerAlertState = {};
+const tonerInfoState = {};
+
+function corBarraToner(percentagem, cor = "black") {
+  if (percentagem === null || percentagem === undefined) return "#94a3b8";
+  if (cor === "cyan") return percentagem <= 20 ? "#0ea5e9" : percentagem <= 50 ? "#38bdf8" : "#06b6d4";
+  if (cor === "magenta") return percentagem <= 20 ? "#db2777" : percentagem <= 50 ? "#ec4899" : "#d946ef";
+  if (cor === "yellow") return percentagem <= 20 ? "#ca8a04" : percentagem <= 50 ? "#eab308" : "#facc15";
+  if (cor === "waste") return percentagem >= 80 ? "#dc2626" : percentagem >= 60 ? "#d97706" : "#16a34a";
+  return percentagem <= 20 ? "#dc2626" : percentagem <= 50 ? "#d97706" : "#16a34a";
+}
+
+function estadoBarraToner(percentagem, cor = "black") {
+  if (percentagem === null || percentagem === undefined) return "Sem leitura";
+  if (cor === "waste") {
+    if (percentagem >= 80) return "Crítico";
+    if (percentagem >= 60) return "Médio";
+    return "Bom";
+  }
+  if (percentagem <= 20) return "Crítico";
+  if (percentagem <= 50) return "Médio";
+  return "Bom";
+}
+
+function classeEstadoToner(percentagem, cor = "black") {
+  if (percentagem === null || percentagem === undefined) return "is-muted";
+  if (cor === "waste") {
+    if (percentagem >= 80) return "is-critical";
+    if (percentagem >= 60) return "is-medium";
+    return "is-good";
+  }
+  if (percentagem <= 20) return "is-critical";
+  if (percentagem <= 50) return "is-medium";
+  return "is-good";
+}
+
+function gerarHTMLBarraToner(percentagem, label = "Toner", cor = "black") {
+  const estado = estadoBarraToner(percentagem, cor);
+  const estadoClasse = classeEstadoToner(percentagem, cor);
+
+  if (percentagem === null || percentagem === undefined) {
+    return `
+      <div class="printer-toner-box">
+        <div class="printer-toner-head">
+          <span class="printer-toner-title">${label}</span>
+          <span class="printer-toner-status ${estadoClasse}">${estado}</span>
+        </div>
+        <div class="printer-toner-bar-wrap">
+          <div class="printer-toner-bar printer-toner-bar-empty" style="width:100%;"></div>
+        </div>
+        <div class="printer-toner-foot">
+          <span class="printer-toner-value">N/D</span>
+        </div>
+      </div>
+    `;
+  }
+
+  const largura = Math.max(0, Math.min(100, percentagem));
+  const barraCor = corBarraToner(percentagem, cor);
+
+  return `
+    <div class="printer-toner-box">
+      <div class="printer-toner-head">
+        <span class="printer-toner-title">${label}</span>
+        <span class="printer-toner-status ${estadoClasse}">${estado}</span>
+      </div>
+      <div class="printer-toner-bar-wrap">
+        <div class="printer-toner-bar" style="width:${largura}%; background:${barraCor};"></div>
+      </div>
+      <div class="printer-toner-foot">
+        <span class="printer-toner-value">${largura}%</span>
+      </div>
+    </div>
+  `;
+}
+
+function gerarHTMLToners(info) {
+  const colorItems = info && Array.isArray(info.colors) ? info.colors : [];
+  const residueItem = info && info.residue ? info.residue : null;
+
+  if (!colorItems.length && !residueItem) {
+    return gerarHTMLBarraToner(null, "Toner", "black");
+  }
+
+  const blocks = [];
+  colorItems.forEach((c) => blocks.push(gerarHTMLBarraToner(c.percent, c.label, c.key)));
+
+  if (!colorItems.length && info && typeof info.percent === "number") {
+    blocks.push(gerarHTMLBarraToner(info.percent, "Preto", "black"));
+  }
+
+  if (residueItem) {
+    blocks.push(gerarHTMLBarraToner(residueItem.percent, residueItem.label || "Resíduo", "waste"));
+  }
+
+  return `<div class="printer-toners-grid">${blocks.join("")}</div>`;
+}
+
+function maybeNotifyCriticalSupply(ip, info) {
+  if (!info) return;
+
+  const printer = impressorasData.find(i => i.ip === ip);
+  const printerLabel = printer ? `${printer.modelo} - ${printer.localizacao}` : ip;
+  const issues = [];
+
+  (info.colors || []).forEach((item) => {
+    if (typeof item.percent === "number" && item.percent <= 20) {
+      issues.push(`${item.label}: ${item.percent}%`);
+    }
+  });
+
+  if (info.residue && typeof info.residue.percent === "number" && info.residue.percent >= 80) {
+    issues.push(`${info.residue.label || "Resíduo"}: ${info.residue.percent}%`);
+  }
+
+  const key = issues.join(" | ");
+  if (!key) {
+    tonerAlertState[ip] = "";
+    return;
+  }
+  if (tonerAlertState[ip] === key) return;
+  tonerAlertState[ip] = key;
+
+  const message = `Estado crítico em ${printerLabel} — ${key}`;
+  mostrarMensagem(message, "erro");
+
+  if ("Notification" in window) {
+    if (Notification.permission === "granted") {
+      new Notification("Alerta de consumíveis", { body: message });
+    } else if (Notification.permission !== "denied") {
+      Notification.requestPermission().then((perm) => {
+        if (perm === "granted") new Notification("Alerta de consumíveis", { body: message });
+      }).catch(() => {});
+    }
+  }
+}
+
+async function obterTonerInfo(ip) {
+  try {
+    if (!window.electronAPI || !window.electronAPI.getTonerSNMP) return null;
+    const resposta = await window.electronAPI.getTonerSNMP(ip);
+
+    if (resposta && resposta.ok) {
+      return {
+        colors: Array.isArray(resposta.colors) ? resposta.colors : [],
+        residue: resposta.residue || null,
+        percent: typeof resposta.percent === "number" ? resposta.percent : null
+      };
+    }
+
+    if (window.electronAPI.getPrinterHTML) {
+      const htmlResp = await window.electronAPI.getPrinterHTML(ip);
+      if (htmlResp && htmlResp.ok && htmlResp.body) {
+        const percent = extrairPercentagemTonerDoHTML(htmlResp.body);
+        return { colors: [{ key: "black", label: "Preto", percent }], residue: null };
+      }
+    }
+    return null;
+  } catch (error) {
+    console.error("Erro ao obter toner da impressora:", error);
+    return null;
+  }
+}
+
+async function testarTonerImpressora(ip, outputId) {
+  const output = el(outputId);
+  if (output) {
+    output.innerHTML = `
+      <div class="printer-toner-box">
+        <div class="printer-toner-head">
+          <span class="printer-toner-title">Consumíveis</span>
+          <span class="printer-toner-status is-muted">A testar</span>
+        </div>
+        <div class="printer-toner-bar-wrap">
+          <div class="printer-toner-bar" style="width:35%;"></div>
+        </div>
+        <div class="printer-toner-foot">
+          <span class="printer-toner-value">...</span>
+        </div>
+      </div>
+    `;
+  }
+
+  const info = await obterTonerInfo(ip);
+  tonerInfoState[ip] = info || null;
+
+  if (output) output.innerHTML = gerarHTMLToners(info);
+  if (info) maybeNotifyCriticalSupply(ip, info);
+  renderDashboardCards();
+}
+
+async function testarTodasAsImpressoras() {
+  for (const item of impressorasData) {
+    const alvoId = `toner-${item.ip.replace(/\./g, "-")}`;
+
+    if (el(alvoId)) {
+      await testarTonerImpressora(item.ip, alvoId);
+    } else {
+      const info = await obterTonerInfo(item.ip);
+      tonerInfoState[item.ip] = info || null;
+      if (info) maybeNotifyCriticalSupply(item.ip, info);
+    }
+  }
+
+  renderDashboardCards();
+}
+
+window.testarTonerImpressora = testarTonerImpressora;
+
+
+function filtrarHistoricoPorImpressora(item) {
+  const serie = String(item.serie || "");
+  const loc = String(item.localizacao || "");
+  const arm = String(item.armazem || "");
+
+  return historicoGlobal.filter(h => {
+    const hLoc = String(h.localizacao || "");
+    const hEq = String(h.equipamento || "");
+    return hLoc.includes(serie) ||
+      hLoc.includes(loc) ||
+      (hLoc.includes(arm) && hLoc.includes(loc)) ||
+      normalizarTexto(hEq).includes(normalizarTexto(item.modelo));
+  });
+}
+
+function abrirHistoricoImpressora(item) {
+  const host = el("historicoImpressoraPanel");
+  if (!host) return;
+
+  const itens = filtrarHistoricoPorImpressora(item);
+  const ultimo = itens[0] || null;
+
+  host.innerHTML = `
+    <div class="printer-history-card">
+      <div class="section-header">
+        <div>
+          <h3>${item.modelo} — ${item.serie}</h3>
+          <p class="section-subtitle">${item.armazem} · ${item.localizacao}</p>
+        </div>
+      </div>
+
+      <div class="history-mini-grid">
+        <div class="summary-card">
+          <h4>Total de Toners</h4>
+          <div class="summary-value">${itens.length}</div>
+        </div>
+        <div class="summary-card">
+          <h4>Último Registo</h4>
+          <div class="meta-line">${ultimo ? `${ultimo.cor || "-"} · ${ultimo.data || "Sem Data"}` : "Sem registos"}</div>
+        </div>
+      </div>
+
+      <div class="printer-history-items">
+        ${itens.length ? itens.slice(0,8).map(h => `
+          <div class="printer-history-item">
+            <div class="meta-line">ID: <span class="meta-value">${h.idInterno || "-"}</span></div>
+            <div class="meta-line">Cor: <span class="meta-value">${h.cor || "-"}</span></div>
+            <div class="meta-line">Data: <span class="meta-value">${h.data || "Sem Data"}</span></div>
+            <div class="meta-line">Localização: <span class="meta-value">${h.localizacao || "Sem Localização"}</span></div>
+          </div>
+        `).join("") : `<div class="panel empty-state"><h3>Sem histórico para esta impressora</h3><p>Quando houver movimentos associados, aparecem aqui.</p></div>`}
+      </div>
+    </div>
+  `;
+}
+
+function renderImpressoras(lista = impressorasData) {
+  const tbody = el("impressorasTableBody");
+  if (!tbody) return;
+
+  const total = impressorasData.length;
+  const ok = impressorasData.filter(i => obterEstadoImpressora(i.ip) === "OK").length;
+  const problema = impressorasData.filter(i => {
+    const e = obterEstadoImpressora(i.ip);
+    return e === "Pendente" || e === "Em reparação";
+  }).length;
+  const resolvidas = impressorasData.filter(i => obterEstadoImpressora(i.ip) === "Resolvido").length;
+
+  setText("countImpressoras", total);
+  setText("countImpressorasOk", ok);
+  setText("countImpressorasProblema", problema);
+  setText("countImpressorasResolvidas", resolvidas);
+
+  tbody.innerHTML = lista.map(item => {
+    const estado = obterEstadoImpressora(item.ip);
+    const tonerId = `toner-${item.ip.replace(/\./g, "-")}`;
+
+    return `
+      <tr>
+        <td>${item.modelo}</td>
+        <td>${item.serie}</td>
+        <td>${item.armazem}</td>
+        <td>${item.localizacao}</td>
+        <td><a href="http://${item.ip}" target="_blank" rel="noopener noreferrer">${item.ip}</a></td>
+        <td>${badgeEstado(estado)}</td>
+        <td>
+          <div id="${tonerId}">${gerarHTMLBarraToner(null)}</div>
+          <div class="table-actions" style="margin-top:8px;">
+            <button class="action-btn ip" onclick="abrirIP('${item.ip}')">Abrir IP</button>
+            <button class="action-btn manut" onclick='abrirManutencaoDireta(${JSON.stringify(item)})'>Manutenção</button>
+            <button class="action-btn" onclick='abrirHistoricoImpressora(${JSON.stringify(item)})'>Histórico</button>
+            <button class="action-btn" onclick="window.testarTonerImpressora('${item.ip}', '${tonerId}')">Testar toner</button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join("");
+}
+
+function filtrarImpressoras() {
+  const texto = normalizarTexto(el("searchImpressoras")?.value || "");
+  const armazem = el("filterArmazem")?.value || "";
+  const estado = el("filterEstadoImpressora")?.value || "";
+
+  const filtrada = impressorasData.filter(item => {
+    const estadoAtual = obterEstadoImpressora(item.ip);
+
+    const passaTexto =
+      normalizarTexto(item.modelo).includes(texto) ||
+      normalizarTexto(item.serie).includes(texto) ||
+      normalizarTexto(item.ip).includes(texto) ||
+      normalizarTexto(item.localizacao).includes(texto) ||
+      normalizarTexto(item.armazem).includes(texto);
+
+    const passaArmazem = !armazem || item.armazem === armazem;
+    const passaEstado = !estado || estadoAtual === estado;
+
+    return passaTexto && passaArmazem && passaEstado;
+  });
+
+  renderImpressoras(filtrada);
+}
+
 /* =========================
-   PISTOLAS
+   PISTOLAS - EMPRESA EXTREMO
 ========================= */
-function badgePistola(p) {
-  return normalizarTexto(p.operador) === "reserva"
+function contarReservasPistolas(lista = pistolasData) {
+  return lista.filter(p => normalizarTexto(p.operador) === "reserva").length;
+}
+
+function atualizarContadoresPistolas(lista = pistolasData) {
+  setText("countPistolas", lista.length);
+  setText("countPistolasBraga", lista.filter(p => normalizarTexto(p.armazem) === "braga").length);
+  setText("countPistolasReserva", contarReservasPistolas(lista));
+}
+
+function badgePistolaReserva(valor) {
+  return normalizarTexto(valor) === "reserva"
     ? `<span class="badge reserva">Reserva</span>`
     : `<span class="badge ok">Ativa</span>`;
 }
 
 function renderPistolas(lista = pistolasData) {
-  const box = el("listaPistolas");
-  if (!box) return;
+  const container = el("listaPistolas");
+  if (!container) return;
 
-  setText("countPistolas", lista.length);
-  setText("countPistolasDia", lista.filter(p => normalizarTexto(p.turno) === "dia").length);
-  setText("countPistolasReserva", lista.filter(p => normalizarTexto(p.operador) === "reserva").length);
+  atualizarContadoresPistolas(lista);
 
-  box.innerHTML = lista.map(p => `
-    <div class="mobile-data-card">
-      <div class="mobile-data-card-top">
-        <h3>Pistola ${p.num}</h3>
-        ${badgePistola(p)}
-      </div>
-      <div class="meta-line">Login: <span class="meta-value">${p.login}</span></div>
-      <div class="meta-line">Operador: <span class="meta-value">${p.operador}</span></div>
-      <div class="meta-line">Turno: <span class="meta-value">${p.turno}</span></div>
+  container.innerHTML = lista.map(p => `
+    <div class="pc-card">
+      <div class="pc-name">${p.nome}</div>
+      <div class="meta-line">Nº: <span class="meta-value">${p.num}</span></div>
+      <div class="meta-line">Password: <span class="meta-value">${p.password}</span></div>
+      <div class="meta-line">CN: <span class="meta-value">${p.cn}</span></div>
       <div class="meta-line">SN: <span class="meta-value">${p.sn}</span></div>
       <div class="meta-line">MAC: <span class="meta-value">${p.mac}</span></div>
-      <div class="meta-line">CN: <span class="meta-value">${p.cn}</span></div>
-      <div class="meta-line">Data: <span class="meta-value">${p.prontas}</span></div>
+      <div class="meta-line">Operador: <span class="meta-value">${p.operador}</span></div>
+      <div class="meta-line">Armazém: <span class="meta-value">${p.armazem}</span></div>
+      <div class="meta-line">Prontas: <span class="meta-value">${p.prontas}</span></div>
+      <div class="meta-line">Estado: <span class="meta-value">${badgePistolaReserva(p.operador)}</span></div>
     </div>
   `).join("");
 }
 
-function filtrarPistolas() {
-  const txt = normalizarTexto(el("searchPistolas")?.value || "");
-  const turno = normalizarTexto(el("filterTurnoPistolas")?.value || "");
-  const tipo = normalizarTexto(el("filterTipoPistolas")?.value || "");
+function filtrarPistolas(txt = "") {
+  const texto = normalizarTexto(txt);
+  const armazemSelecionado = normalizarTexto(el("filterarmazemPistolas")?.value || "");
+  const tipoSelecionado = normalizarTexto(el("filterTipoPistolas")?.value || "");
 
   const filtradas = pistolasData.filter(p => {
-    const textoOk =
-      normalizarTexto(p.num).includes(txt) ||
-      normalizarTexto(p.login).includes(txt) ||
-      normalizarTexto(p.operador).includes(txt) ||
-      normalizarTexto(p.sn).includes(txt) ||
-      normalizarTexto(p.mac).includes(txt);
+    const passaTexto =
+      normalizarTexto(p.num).includes(texto) ||
+      normalizarTexto(p.nome).includes(texto) ||
+      normalizarTexto(p.password).includes(texto) ||
+      normalizarTexto(p.cn).includes(texto) ||
+      normalizarTexto(p.sn).includes(texto) ||
+      normalizarTexto(p.mac).includes(texto) ||
+      normalizarTexto(p.operador).includes(texto) ||
+      normalizarTexto(p.armazem).includes(texto) ||
+      normalizarTexto(p.prontas).includes(texto) ||
+      normalizarTexto(p.estado).includes(texto);
 
-    const turnoOk = !turno || normalizarTexto(p.turno) === turno;
-    const tipoAtual = normalizarTexto(p.operador) === "reserva" ? "reserva" : "ativas";
-    const tipoOk = !tipo || tipoAtual === tipo;
+    const passaarmazem = !armazemSelecionado || normalizarTexto(p.armazem) === armazemSelecionado;
 
-    return textoOk && turnoOk && tipoOk;
+    const tipo = normalizarTexto(p.operador) === "reserva" ? "reserva" : "ativa";
+    const passaTipo = !tipoSelecionado || tipo === tipoSelecionado;
+
+    return passaTexto && passaarmazem && passaTipo;
   });
 
   renderPistolas(filtradas);
 }
 
+function filtrarPistolasComFiltros() {
+  const texto = el("searchPistolas")?.value || "";
+  filtrarPistolas(texto);
+}
+
 /* =========================
-   PORTAS
+   PORTAS - EMPRESA EXTREMO
 ========================= */
-function estadoPorta(p) {
-  const temIP = normalizarTexto(p.ip) !== "";
-  const temUser = normalizarTexto(p.user) !== "";
+function estadoPorta(porta) {
+  const temIP = normalizarTexto(porta.ip) !== "";
+  const temUser = normalizarTexto(porta.user) !== "";
 
   if (!temIP && !temUser) return "livre";
   if (temIP && temUser) return "ocupado";
-  if (temIP && !temUser) return "semuser";
+  if (temIP && !temUser) return "semUser";
   return "livre";
 }
 
 function badgePorta(estado) {
   if (estado === "ocupado") return `<span class="badge ocupado">Ocupado</span>`;
   if (estado === "livre") return `<span class="badge livre">Livre</span>`;
-  if (estado === "semuser") return `<span class="badge aviso">Sem user</span>`;
-  return "";
+  if (estado === "semUser") return `<span class="badge aviso">Sem user</span>`;
+  return `<span class="badge">-</span>`;
 }
+
+function atualizarContadoresPortas(lista = portasData) {
+  let total = lista.length;
+  let usadas = 0;
+  let livres = 0;
+  let semUser = 0;
+
+  lista.forEach(porta => {
+    const estado = estadoPorta(porta);
+    if (estado === "ocupado") usadas++;
+    if (estado === "livre") livres++;
+    if (estado === "semUser") semUser++;
+  });
+
+  setText("countPortas", total);
+  setText("countPortasUsadas", usadas);
+  setText("countPortasLivres", livres);
+  setText("countPortasSemUser", semUser);
+}
+
 function renderPortas(lista = portasData) {
-  const box = el("listaPortas");
-  if (!box) return;
+  const container = el("listaPortas");
+  if (!container) return;
 
-  setText("countPortas", lista.length);
-  setText("countPortasUsadas", lista.filter(p => estadoPorta(p) === "ocupado").length);
-  setText("countPortasLivres", lista.filter(p => estadoPorta(p) === "livre").length);
+  atualizarContadoresPortas(lista);
 
-  box.innerHTML = lista.map(p => `
-    <div class="mobile-data-card">
-      <div class="mobile-data-card-top">
-        <h3>Porta ${p.porta || "-"}</h3>
-        ${badgePorta(estadoPorta(p))}
+  container.innerHTML = lista.map(p => {
+    const estado = estadoPorta(p);
+    return `
+      <div class="pc-card">
+        <div class="pc-name">Porta ${p.porta || "-"}</div>
+        <div class="meta-line">Local: <span class="meta-value">${p.local || "-"}</span></div>
+        <div class="meta-line">User: <span class="meta-value">${p.user || "-"}</span></div>
+        <div class="meta-line">Equipamento: <span class="meta-value">${p.equipamento || "-"}</span></div>
+        <div class="meta-line">IP: <span class="meta-value">${p.ip ? `<a href="http://${p.ip}" target="_blank">${p.ip}</a>` : "-"}</span></div>
+        <div class="meta-line">Estado: <span class="meta-value">${badgePorta(estado)}</span></div>
       </div>
-      <div class="meta-line">Localização: <span class="meta-value">${p.local || "-"}</span></div>
-      <div class="meta-line">Utilizador: <span class="meta-value">${p.user || "-"}</span></div>
-      <div class="meta-line">Equipamento: <span class="meta-value">${p.equipamento || "-"}</span></div>
-      <div class="meta-line">IP: <span class="meta-value">${p.ip ? `<a href="http://${p.ip}" target="_blank">${p.ip}</a>` : "-"}</span></div>
-    </div>
-  `).join("");
+    `;
+  }).join("");
 }
 
-
-function filtrarPortas() {
-  const txt = normalizarTexto(el("searchPortas")?.value || "");
-  const estado = normalizarTexto(el("filterEstadoPortas")?.value || "");
+function filtrarPortas(txt = "") {
+  const texto = normalizarTexto(txt);
+  const estadoSelecionado = normalizarTexto(el("filterEstadoPortas")?.value || "");
 
   const filtradas = portasData.filter(p => {
-    const textoOk =
-      normalizarTexto(p.porta).includes(txt) ||
-      normalizarTexto(p.local).includes(txt) ||
-      normalizarTexto(p.user).includes(txt) ||
-      normalizarTexto(p.ip).includes(txt);
+    const passaTexto =
+      normalizarTexto(p.porta).includes(texto) ||
+      normalizarTexto(p.local).includes(texto) ||
+      normalizarTexto(p.user).includes(texto) ||
+      normalizarTexto(p.ip).includes(texto);
 
-    const estadoOk = !estado || estadoPorta(p) === estado;
-    return textoOk && estadoOk;
+    const passaEstado = !estadoSelecionado || estadoPorta(p) === estadoSelecionado;
+
+    return passaTexto && passaEstado;
   });
 
   renderPortas(filtradas);
 }
 
+function filtrarPortasComEstado() {
+  const texto = el("searchPortas")?.value || "";
+  filtrarPortas(texto);
+}
+
 /* =========================
-   USERS
+   USERS - EMPRESA EXTREMO
 ========================= */
-function temMO365(u) {
+function utilizadorTemMO365(u) {
   return normalizarTexto(u.user_mo365) !== "";
 }
 
-function temPistola(u) {
+function utilizadorTemPistola(u) {
   return normalizarTexto(u.op_pistola) !== "";
 }
 
-function temTeamviewer(u) {
+function utilizadorTemTeamviewer(u) {
   return normalizarTexto(u.teamviewer) !== "";
 }
 
+function badgeUser(valor) {
+  return valor ? `<span class="badge ok">Sim</span>` : `<span class="badge livre">Não</span>`;
+}
+
+function atualizarContadoresUsers(lista = usersData) {
+  setText("countUsers", lista.length);
+  setText("countUsersMO365", lista.filter(utilizadorTemMO365).length);
+  setText("countUsersPistola", lista.filter(utilizadorTemPistola).length);
+  setText("countUsersTV", lista.filter(utilizadorTemTeamviewer).length);
+}
+
 function renderUsers(lista = usersData) {
-  const box = el("listaUsers");
-  if (!box) return;
+  const container = el("listaUsers");
+  if (!container) return;
 
-  // 🔥 ORDENAR ALFABETICAMENTE PELO NOME
-  const listaOrdenada = [...lista].sort((a, b) =>
-    (a.nome || "").localeCompare(b.nome || "", "pt", { sensitivity: "base" })
-  );
+  atualizarContadoresUsers(lista);
 
-  setText("countUsers", listaOrdenada.length);
-  setText("countUsersMO365", listaOrdenada.filter(temMO365).length);
-  setText("countUsersPistola", listaOrdenada.filter(temPistola).length);
-
-  box.innerHTML = listaOrdenada.map((u, i) => `
-    <div class="mobile-data-card">
-      <div class="mobile-data-card-top">
-        <h3>${u.nome || "-"}</h3>
-        ${temMO365(u) ? `<span class="badge ok">MO365</span>` : `<span class="badge livre">Sem MO365</span>`}
-      </div>
-
+  container.innerHTML = lista.map(u => `
+    <div class="pc-card">
+      <div class="pc-name">${u.nome}</div>
       <div class="meta-line">Zona: <span class="meta-value">${u.zona || "-"}</span></div>
-      <div class="meta-line">User PC: <span class="meta-value">${u.user_pc_eye || "-"}</span></div>
+      <div class="meta-line">User PC/EYE: <span class="meta-value">${u.user_pc_eye || "-"}</span></div>
       <div class="meta-line">Pass Remote: <span class="meta-value">${u.pass_remote || "-"}</span></div>
+      <div class="meta-line">Pass Eye Peak: <span class="meta-value">${u.pass_eye_peak || "-"}</span></div>
       <div class="meta-line">Op. Pistola: <span class="meta-value">${u.op_pistola || "-"}</span></div>
       <div class="meta-line">Pass Pistola: <span class="meta-value">${u.pass_pistola || "-"}</span></div>
       <div class="meta-line">Nome PC: <span class="meta-value">${u.nome_pc || "-"}</span></div>
       <div class="meta-line">TeamViewer: <span class="meta-value">${u.teamviewer || "-"}</span></div>
       <div class="meta-line">User MO365: <span class="meta-value">${u.user_mo365 || "-"}</span></div>
+      <div class="meta-line">Pw MO365: <span class="meta-value">${u.pw_mo365 || "-"}</span></div>
       <div class="meta-line">Email Bragalis: <span class="meta-value">${u.email_bragalis || "-"}</span></div>
-
-      <div class="card-actions">
-        ${temPistola(u) ? `<span class="badge ok">Com Pistola</span>` : `<span class="badge livre">Sem Pistola</span>`}
-      </div>
-
-      <div class="card-actions">
-        <button class="small-btn btn-edit" onclick="toggleUserExtra('userExtra${i}')">Ver mais</button>
-      </div>
-
-      <div id="userExtra${i}" class="user-extra-box" style="display:none;">
-        <div class="meta-line">Pass Eye Peak: <span class="meta-value">${u.pass_eye_peak || "-"}</span></div>
-        <div class="meta-line">Pw MO365: <span class="meta-value">${u.pw_mo365 || "-"}</span></div>
-        <div class="meta-line">Pass Bragalis: <span class="meta-value">${u.pass_bragalis || "-"}</span></div>
-      </div>
+      <div class="meta-line">Pass Bragalis: <span class="meta-value">${u.pass_bragalis || "-"}</span></div>
+      <div class="meta-line">MO365: <span class="meta-value">${badgeUser(utilizadorTemMO365(u))}</span></div>
+      <div class="meta-line">Pistola: <span class="meta-value">${badgeUser(utilizadorTemPistola(u))}</span></div>
+      <div class="meta-line">TeamViewer ativo: <span class="meta-value">${badgeUser(utilizadorTemTeamviewer(u))}</span></div>
     </div>
   `).join("");
 }
-function toggleUserExtra(id) {
-  const box = el(id);
-  if (!box) return;
-  box.style.display = box.style.display === "none" ? "block" : "none";
-}
-function filtrarUsers() {
-  const txt = normalizarTexto(el("searchUsers")?.value || "");
-  const mo365 = normalizarTexto(el("filterUsersMO365")?.value || "");
-  const pistola = normalizarTexto(el("filterUsersPistola")?.value || "");
 
-  const filtrados = usersData.filter(u => {
-    const textoOk =
-      normalizarTexto(u.nome).includes(txt) ||
-      normalizarTexto(u.zona).includes(txt) ||
-      normalizarTexto(u.user_pc_eye).includes(txt) ||
-      normalizarTexto(u.pass_remote).includes(txt) ||
-      normalizarTexto(u.op_pistola).includes(txt) ||
-      normalizarTexto(u.pass_pistola).includes(txt) ||
-      normalizarTexto(u.nome_pc).includes(txt) ||
-      normalizarTexto(u.teamviewer).includes(txt) ||
-      normalizarTexto(u.email_bragalis).includes(txt) ||
-      normalizarTexto(u.user_mo365).includes(txt);
+function filtrarUsers(txt = "") {
+  const texto = normalizarTexto(txt);
+  const filtroMO365 = normalizarTexto(el("filterUsersMO365")?.value || "");
+  const filtroPistola = normalizarTexto(el("filterUsersPistola")?.value || "");
 
-    let mo365Ok = true;
-    if (mo365 === "sim") mo365Ok = temMO365(u);
-    if (mo365 === "nao") mo365Ok = !temMO365(u);
+  const filtrado = usersData.filter(u => {
+    const passaTexto =
+      normalizarTexto(u.nome).includes(texto) ||
+      normalizarTexto(u.zona).includes(texto) ||
+      normalizarTexto(u.user_pc_eye).includes(texto) ||
+      normalizarTexto(u.pass_remote).includes(texto) ||
+      normalizarTexto(u.pass_eye_peak).includes(texto) ||
+      normalizarTexto(u.op_pistola).includes(texto) ||
+      normalizarTexto(u.pass_pistola).includes(texto) ||
+      normalizarTexto(u.nome_pc).includes(texto) ||
+      normalizarTexto(u.teamviewer).includes(texto) ||
+      normalizarTexto(u.user_mo365).includes(texto) ||
+      normalizarTexto(u.pw_mo365).includes(texto) ||
+      normalizarTexto(u.email_bragalis).includes(texto) ||
+      normalizarTexto(u.pass_bragalis).includes(texto);
 
-    let pistolaOk = true;
-    if (pistola === "sim") pistolaOk = temPistola(u);
-    if (pistola === "nao") pistolaOk = !temPistola(u);
+    let passaMO365 = true;
+    if (filtroMO365 === "sim") passaMO365 = utilizadorTemMO365(u);
+    if (filtroMO365 === "nao") passaMO365 = !utilizadorTemMO365(u);
 
-    return textoOk && mo365Ok && pistolaOk;
+    let passaPistola = true;
+    if (filtroPistola === "sim") passaPistola = utilizadorTemPistola(u);
+    if (filtroPistola === "nao") passaPistola = !utilizadorTemPistola(u);
+
+    return passaTexto && passaMO365 && passaPistola;
   });
 
-  renderUsers(filtrados);
+  renderUsers(filtrado);
 }
-/* =========================
-   DARK MODE
-========================= */
-function aplicarDarkMode(ativo) {
-  document.body.classList.toggle("dark", ativo);
-  document.documentElement.classList.toggle("dark", ativo);
-  localStorage.setItem("modo", ativo ? "dark" : "light");
-  if (el("darkSwitch")) el("darkSwitch").checked = ativo;
+
+function filtrarUsersComFiltros() {
+  const texto = el("searchUsers")?.value || "";
+  filtrarUsers(texto);
 }
 
 /* =========================
    INIT
 ========================= */
-window.onload = () => {
+window.addEventListener("DOMContentLoaded", () => {
+  if (el("historicoImpressoraPanel") && impressorasData && impressorasData.length) { abrirHistoricoImpressora(impressorasData[0]); }
   const sw = el("darkSwitch");
-  const darkAtivo = localStorage.getItem("modo") === "dark";
-  aplicarDarkMode(darkAtivo);
+
+  if (localStorage.getItem("modo") === "dark") {
+    document.body.classList.add("dark");
+    document.documentElement.classList.add("dark");
+    if (sw) sw.checked = true;
+  }
 
   if (sw) {
-    sw.addEventListener("change", () => aplicarDarkMode(sw.checked));
+    sw.addEventListener("change", () => {
+      document.body.classList.toggle("dark", sw.checked);
+      document.documentElement.classList.toggle("dark", sw.checked);
+      localStorage.setItem("modo", sw.checked ? "dark" : "light");
+    });
   }
 
   carregarChecklist();
+  carregarEdicaoToner();
+  preencherLocaisManutencao();
+  preencherFormularioManutencao();
+
   renderImpressoras();
-  preencherDropdownManutencao();
+  renderManutencoes(manutencoesGlobal);
   renderPistolas();
   renderPortas();
   renderUsers();
-  mudarPagina("dashboard");
+
+  if (el("manutencaoSerie")) {
+    el("manutencaoSerie").addEventListener("change", sincronizarCamposImpressora);
+  }
+
+  if (el("manutencaoIP")) {
+    el("manutencaoIP").addEventListener("change", sincronizarCamposImpressora);
+  }
+
+  const estaNaPaginaImpressoras = !!el("impressorasTableBody");
+  const estaNoDashboard = !!el("listaDashboardStock") || !!el("searchDashboard");
+
+  if (estaNaPaginaImpressoras || estaNoDashboard) {
+    setTimeout(() => {
+      testarTodasAsImpressoras();
+    }, 600);
+
+    setInterval(() => {
+      testarTodasAsImpressoras();
+    }, 60000);
+  }
+
+});
+
+/* =========================
+   TABLET / FIREBASE COMPLETO
+========================= */
+const printerFirebaseState = {};
+
+function normalizePrinterColorsFromFirebase(printerDoc) {
+  const toner = printerDoc && printerDoc.toner ? printerDoc.toner : {};
+  const colors = [];
+
+  const colorMap = [
+    ["black", "Preto", "black"],
+    ["cyan", "Ciano", "cyan"],
+    ["magenta", "Magenta", "magenta"],
+    ["yellow", "Amarelo", "yellow"]
+  ];
+
+  colorMap.forEach(([field, label, key]) => {
+    const value = toner[field];
+    if (typeof value === "number") {
+      colors.push({ key, label, percent: Math.max(0, Math.min(100, Math.round(value))) });
+    }
+  });
+
+  return colors;
+}
+
+function normalizePrinterResidueFromFirebase(printerDoc) {
+  const wasteValue = printerDoc && typeof printerDoc.waste === "number"
+    ? printerDoc.waste
+    : (printerDoc && typeof printerDoc.residue === "number" ? printerDoc.residue : null);
+
+  if (typeof wasteValue !== "number") return null;
+
+  return {
+    key: "waste",
+    label: "Resíduo",
+    percent: Math.max(0, Math.min(100, Math.round(wasteValue)))
+  };
+}
+
+function mapFirebasePrinterInfo(printerDoc) {
+  const colors = normalizePrinterColorsFromFirebase(printerDoc);
+  const residue = normalizePrinterResidueFromFirebase(printerDoc);
+  let percent = null;
+
+  if (colors.length === 1 && colors[0].key === "black") {
+    percent = colors[0].percent;
+  } else if (!colors.length && printerDoc && typeof printerDoc.percent === "number") {
+    percent = Math.max(0, Math.min(100, Math.round(printerDoc.percent)));
+  }
+
+  return { colors, residue, percent };
+}
+
+function bindPrintersFirebaseRealtime() {
+  if (!db || !db.collection) return;
+
+  db.collection("printers").onSnapshot((snap) => {
+    snap.forEach((doc) => {
+      const data = doc.data() || {};
+      const ip = data.ip || doc.id;
+      if (!ip) return;
+
+      const mapped = mapFirebasePrinterInfo(data);
+      printerFirebaseState[ip] = data;
+      tonerInfoState[ip] = mapped;
+      maybeNotifyCriticalSupply(ip, mapped);
+    });
+
+    renderDashboardCards();
+    renderImpressoras();
+
+    const dashboardHasSearch = !!el("searchDashboard");
+    if (dashboardHasSearch && normalizarTexto(el("searchDashboard")?.value || "")) {
+      renderDashboardCards();
+    }
+  }, (error) => {
+    console.error("Erro ao ler coleção printers:", error);
+  });
+}
+
+const __originalObterTonerInfo = obterTonerInfo;
+obterTonerInfo = async function(ip) {
+  if (printerFirebaseState[ip]) {
+    return mapFirebasePrinterInfo(printerFirebaseState[ip]);
+  }
+  return await __originalObterTonerInfo(ip);
 };
+
+const __originalTestarTodasAsImpressoras = testarTodasAsImpressoras;
+testarTodasAsImpressoras = async function() {
+  const webMode = !(window.electronAPI && window.electronAPI.getTonerSNMP);
+  if (webMode) {
+    impressorasData.forEach((item) => {
+      const info = printerFirebaseState[item.ip] ? mapFirebasePrinterInfo(printerFirebaseState[item.ip]) : null;
+      tonerInfoState[item.ip] = info;
+      const alvoId = `toner-${item.ip.replace(/\./g, "-")}`;
+      if (el(alvoId)) {
+        el(alvoId).innerHTML = gerarHTMLToners(info);
+      }
+      if (info) maybeNotifyCriticalSupply(item.ip, info);
+    });
+    renderDashboardCards();
+    return;
+  }
+  return await __originalTestarTodasAsImpressoras();
+};
+
+const __originalAbrirIP = abrirIP;
+abrirIP = function(ip) {
+  // No tablet/web o IP fica só de leitura
+  const webMode = !(window.electronAPI && window.electronAPI.getTonerSNMP);
+  if (webMode) return;
+  return __originalAbrirIP(ip);
+};
+
+const __originalRenderImpressoras = renderImpressoras;
+renderImpressoras = function(lista = impressorasData) {
+  const tbody = el("impressorasTableBody");
+  if (!tbody) return __originalRenderImpressoras(lista);
+
+  const total = impressorasData.length;
+  const ok = impressorasData.filter(i => obterEstadoImpressora(i.ip) === "OK").length;
+  const problema = impressorasData.filter(i => {
+    const e = obterEstadoImpressora(i.ip);
+    return e === "Pendente" || e === "Em reparação";
+  }).length;
+  const resolvidas = impressorasData.filter(i => obterEstadoImpressora(i.ip) === "Resolvido").length;
+
+  setText("countImpressoras", total);
+  setText("countImpressorasOk", ok);
+  setText("countImpressorasProblema", problema);
+  setText("countImpressorasResolvidas", resolvidas);
+
+  const webMode = !(window.electronAPI && window.electronAPI.getTonerSNMP);
+
+  tbody.innerHTML = lista.map(item => {
+    const estado = obterEstadoImpressora(item.ip);
+    const tonerId = `toner-${item.ip.replace(/\./g, "-")}`;
+    const info = printerFirebaseState[item.ip] ? mapFirebasePrinterInfo(printerFirebaseState[item.ip]) : (tonerInfoState[item.ip] || null);
+    const ipHtml = webMode ? item.ip : `<a href="http://${item.ip}" target="_blank" rel="noopener noreferrer">${item.ip}</a>`;
+
+    return `
+      <tr>
+        <td>${item.modelo}</td>
+        <td>${item.serie}</td>
+        <td>${item.armazem}</td>
+        <td>${item.localizacao}</td>
+        <td>${ipHtml}</td>
+        <td>${badgeEstado(estado)}</td>
+        <td>
+          <div id="${tonerId}">${gerarHTMLToners(info)}</div>
+          <div class="table-actions" style="margin-top:8px;">
+            ${webMode ? "" : `<button class="action-btn ip" onclick="abrirIP('${item.ip}')">Abrir IP</button>`}
+            <button class="action-btn manut" onclick='abrirManutencaoDireta(${JSON.stringify(item)})'>Manutenção</button>
+            ${webMode ? "" : `<button class="action-btn" onclick="window.testarTonerImpressora('${item.ip}', '${tonerId}')">Testar toner</button>`}
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join("");
+};
+
+window.addEventListener("DOMContentLoaded", () => {
+  if (el("historicoImpressoraPanel") && impressorasData && impressorasData.length) { abrirHistoricoImpressora(impressorasData[0]); }
+  bindPrintersFirebaseRealtime();
+});
+
+
+
+/* =========================
+   VERSÃO / ONLINE-OFFLINE
+========================= */
+const APP_BRAGA_VERSION = "v1.8 Premium";
+
+function atualizarEstadoLigacaoAppBraga() {
+  const online = navigator.onLine;
+  document.querySelectorAll(".status-pill").forEach(node => {
+    node.textContent = online ? "Sistema Online" : "Sistema Offline";
+    node.classList.toggle("offline", !online);
+  });
+  document.querySelectorAll(".version-pill").forEach(node => {
+    node.textContent = APP_BRAGA_VERSION;
+  });
+}
+
+window.addEventListener("online", atualizarEstadoLigacaoAppBraga);
+window.addEventListener("offline", atualizarEstadoLigacaoAppBraga);
+document.addEventListener("DOMContentLoaded", atualizarEstadoLigacaoAppBraga);
+
+/* =========================
+   ADD TONER - ESTÁVEL
+========================= */
+const tonerMapStable = {
+  "TK-3190": { equipamento: "P3155DN", cor: "Preto", codigo: "TK-3190" },
+  "TK-8365Y": { equipamento: "TASKalfa_255ci", cor: "Amarelo", codigo: "TK-8365Y" },
+  "TK-8365C": { equipamento: "TASKalfa_255ci", cor: "Azul", codigo: "TK-8365C" },
+  "TK-8365M": { equipamento: "TASKalfa_255ci", cor: "Vermelho", codigo: "TK-8365M" },
+  "TK-8365K": { equipamento: "TASKalfa_255ci", cor: "Preto", codigo: "TK-8365K" },
+  "TK-3430": { equipamento: "PA5500x", cor: "Preto", codigo: "TK-3430" }
+};
+
+let scannerInstanceStable = null;
+let scannerAtivoStable = false;
+
+function mostrarOCRStatusStable(texto) {
+  const box = el("ocrStatus");
+  if (!box) return;
+  box.style.display = "block";
+  box.innerText = texto;
+}
+
+function normalizarTextoOCRStable(texto) {
+  return String(texto || "")
+    .replace(/[\r\n]+/g, " ")
+    .replace(/\s+/g, " ")
+    .replace(/—/g, "-")
+    .replace(/_/g, "-")
+    .trim()
+    .toUpperCase();
+}
+
+function preencherDataAtualSeVaziaStable() {
+  const dataEl = el("data");
+  if (!dataEl) return;
+  if (!dataEl.value) {
+    const hoje = new Date();
+    const yyyy = hoje.getFullYear();
+    const mm = String(hoje.getMonth() + 1).padStart(2, "0");
+    const dd = String(hoje.getDate()).padStart(2, "0");
+    dataEl.value = `${yyyy}-${mm}-${dd}`;
+  }
+}
+
+function montarTextoLocalizacaoStable(item) {
+  return `${item.serie} - ${item.armazem} - ${item.localizacao}`;
+}
+
+function procurarImpressoraPorUltimos3DigitosStable(final3) {
+  const alvo = String(final3 || "").trim().toUpperCase();
+  if (alvo.length !== 3) return null;
+  return impressorasData.find(item => String(item.serie || "").toUpperCase().slice(-3) === alvo) || null;
+}
+
+function abrirSerie3DigitosStable() {
+  const box = el("serial3Box");
+  if (box) box.style.display = "block";
+  const input = el("serial3Input");
+  if (input) {
+    input.value = "";
+    setTimeout(() => input.focus(), 120);
+  }
+}
+
+function fecharSerie3DigitosStable() {
+  const box = el("serial3Box");
+  if (box) box.style.display = "none";
+  const input = el("serial3Input");
+  if (input) input.value = "";
+}
+
+function aplicarDadosTonerStable(toner) {
+  if (el("equipamento")) el("equipamento").value = toner.equipamento || "";
+  if (el("cor")) el("cor").value = toner.cor || "";
+  preencherDataAtualSeVaziaStable();
+}
+
+function extrairDadosEtiquetaOCRStable(texto) {
+  const t = normalizarTextoOCRStable(texto);
+
+  let tonerCode = "";
+  const tkMatch = t.match(/TK[\s-]?(\d{4}[A-Z]?)/);
+  if (tkMatch) tonerCode = `TK-${tkMatch[1]}`;
+
+  let dataFolha = "";
+  const dataISO = t.match(/\d{4}-\d{2}-\d{2}/);
+  const dataPTSlash = t.match(/\d{2}\/\d{2}\/\d{4}/);
+  const dataPTHyphen = t.match(/\d{2}-\d{2}-\d{4}/);
+
+  if (dataISO) {
+    dataFolha = dataISO[0];
+  } else if (dataPTSlash) {
+    const [dd, mm, yyyy] = dataPTSlash[0].split("/");
+    dataFolha = `${yyyy}-${mm}-${dd}`;
+  } else if (dataPTHyphen) {
+    const [dd, mm, yyyy] = dataPTHyphen[0].split("-");
+    dataFolha = `${yyyy}-${mm}-${dd}`;
+  }
+
+  let serieEncontrada = "";
+  for (const item of impressorasData) {
+    const s = String(item.serie || "").toUpperCase();
+    if (s && t.includes(s)) {
+      serieEncontrada = item.serie;
+      break;
+    }
+  }
+
+  let equipamento = "";
+  let cor = "";
+
+  if (tonerCode && tonerMapStable[tonerCode]) {
+    equipamento = tonerMapStable[tonerCode].equipamento || "";
+    cor = tonerMapStable[tonerCode].cor || "";
+  }
+
+  if (!equipamento) {
+    if (t.includes("P3155DN")) equipamento = "P3155DN";
+    else if (t.includes("PA5500X")) equipamento = "PA5500x";
+    else if (t.includes("2554CI")) equipamento = "TASKalfa_255ci";
+  }
+
+  if (!cor && tonerCode) {
+    if (tonerCode.endsWith("Y")) cor = "Amarelo";
+    else if (tonerCode.endsWith("C")) cor = "Azul";
+    else if (tonerCode.endsWith("M")) cor = "Vermelho";
+    else cor = "Preto";
+  }
+
+  return {
+    tonerCode,
+    equipamento,
+    cor,
+    dataFolha,
+    serie: serieEncontrada
+  };
+}
+
+function aplicarDadosOCRNoFormularioStable(dados) {
+  if (!dados) return false;
+
+  if (dados.equipamento && el("equipamento")) el("equipamento").value = dados.equipamento;
+  if (dados.cor && el("cor")) el("cor").value = dados.cor;
+
+  if (el("dataFolha")) {
+    el("dataFolha").value = dados.dataFolha || "";
+  }
+
+  preencherDataAtualSeVaziaStable();
+
+  if (dados.serie && el("localizacao")) {
+    const printer = impressorasData.find(p => p.serie === dados.serie);
+    if (printer) {
+      el("localizacao").value = montarTextoLocalizacaoStable(printer);
+    }
+  } else if (dados.equipamento || dados.cor) {
+    abrirSerie3DigitosStable();
+  }
+
+  return !!(dados.tonerCode || dados.equipamento || dados.cor || dados.dataFolha || dados.serie);
+}
+
+function processarTextoLidoStable(textoLido) {
+  const bruto = String(textoLido || "");
+  const normal = normalizarTextoOCRStable(bruto);
+
+  const tkMatch = normal.match(/TK[\s-]?(\d{4}[A-Z]?)/);
+  if (tkMatch) {
+    const tk = `TK-${tkMatch[1]}`;
+    const toner = tonerMapStable[tk] || null;
+    if (toner) {
+      aplicarDadosTonerStable(toner);
+      mostrarMensagem(`Toner identificado: ${toner.codigo}`);
+      abrirSerie3DigitosStable();
+      return true;
+    }
+  }
+
+  mostrarMensagem("Código não reconhecido para preenchimento automático.", "erro");
+  return false;
+}
+
+async function startScannerStable() {
+  const reader = el("reader");
+
+  if (!reader) {
+    mostrarMensagem("Zona do scanner não encontrada.", "erro");
+    return;
+  }
+
+  if (typeof Html5Qrcode === "undefined") {
+    mostrarMensagem("Biblioteca da câmara não carregada.", "erro");
+    return;
+  }
+
+  if (scannerAtivoStable) {
+    mostrarMensagem("A câmara já está aberta.", "erro");
+    return;
+  }
+
+  reader.innerHTML = "";
+  scannerInstanceStable = new Html5Qrcode("reader");
+
+  try {
+    await scannerInstanceStable.start(
+      { facingMode: "environment" },
+      { fps: 10, qrbox: { width: 280, height: 180 } },
+      (decodedText) => {
+        processarTextoLidoStable(decodedText);
+        stopScannerStable();
+      },
+      () => {}
+    );
+    scannerAtivoStable = true;
+    mostrarMensagem("Câmara iniciada.");
+  } catch (e) {
+    console.error("Erro ao iniciar scanner:", e);
+    mostrarMensagem("Não foi possível abrir a câmara.", "erro");
+  }
+}
+
+async function stopScannerStable() {
+  const reader = el("reader");
+  if (!scannerInstanceStable || !scannerAtivoStable) {
+    if (reader) reader.innerHTML = "";
+    scannerAtivoStable = false;
+    return;
+  }
+
+  try {
+    await scannerInstanceStable.stop();
+    await scannerInstanceStable.clear();
+  } catch (e) {
+    console.error("Erro ao fechar scanner:", e);
+  } finally {
+    scannerInstanceStable = null;
+    scannerAtivoStable = false;
+    if (reader) reader.innerHTML = "";
+  }
+}
+
+function abrirOCRStable() {
+  const input = el("ocrInput");
+  if (!input) {
+    mostrarMensagem("Input OCR não encontrado.", "erro");
+    return;
+  }
+  input.value = "";
+  input.click();
+}
+
+async function processarOCRInputStable(event) {
+  const file = event && event.target && event.target.files ? event.target.files[0] : null;
+  if (!file) return;
+
+  if (typeof Tesseract === "undefined") {
+    mostrarMensagem("Biblioteca OCR não carregada.", "erro");
+    return;
+  }
+
+  try {
+    mostrarOCRStatusStable("A ler a folha... pode demorar alguns segundos.");
+    mostrarMensagem("A ler a folha...");
+
+    const result = await Tesseract.recognize(file, "eng", { logger: () => {} });
+    const texto = result && result.data ? result.data.text : "";
+    const dados = extrairDadosEtiquetaOCRStable(texto);
+    const ok = aplicarDadosOCRNoFormularioStable(dados);
+
+    const resumo = [
+      dados.tonerCode ? `Toner: ${dados.tonerCode}` : "",
+      dados.equipamento ? `Equipamento: ${dados.equipamento}` : "",
+      dados.cor ? `Cor: ${dados.cor}` : "",
+      dados.dataFolha ? `Data folha: ${dados.dataFolha}` : "",
+      el("data") && el("data").value ? `Data scan: ${el("data").value}` : "",
+      dados.serie ? `Série: ${dados.serie}` : ""
+    ].filter(Boolean).join(" | ");
+
+    mostrarOCRStatusStable(resumo || "A folha foi lida, mas não encontrei dados suficientes.");
+    mostrarMensagem(ok ? "Folha lida com sucesso." : "Não encontrei dados suficientes na folha.", ok ? "sucesso" : "erro");
+    if (ok && dados.serie && dados.equipamento) {
+      await gerarWordEtiquetaFromForm(true);
+    }
+  } catch (e) {
+    console.error("Erro OCR:", e);
+    mostrarOCRStatusStable("Erro ao ler a folha.");
+    mostrarMensagem("Erro ao ler a folha.", "erro");
+  }
+}
+
+function confirmarSerie3DigitosStable() {
+  const valor = ((el("serial3Input") && el("serial3Input").value) || "").trim().toUpperCase();
+
+  if (valor.length !== 3) {
+    mostrarMensagem("Introduza exatamente 3 dígitos.", "erro");
+    return;
+  }
+
+  const printer = procurarImpressoraPorUltimos3DigitosStable(valor);
+  if (!printer) {
+    mostrarMensagem("Nenhuma impressora encontrada com esses 3 dígitos.", "erro");
+    return;
+  }
+
+  if (el("localizacao")) {
+    el("localizacao").value = montarTextoLocalizacaoStable(printer);
+  }
+
+  fecharSerie3DigitosStable();
+  mostrarMensagem("Localização selecionada com sucesso.");
+}
+
+window.startScanner = startScannerStable;
+window.stopScanner = stopScannerStable;
+window.abrirOCR = abrirOCRStable;
+window.processarOCRInput = processarOCRInputStable;
+window.confirmarSerie3Digitos = confirmarSerie3DigitosStable;
+window.fecharSerie3Digitos = fecharSerie3DigitosStable;
+
+
+/* =========================
+   ETIQUETA WORD AUTOMÁTICA
+========================= */
+function formatDatePTAppBraga(valor) {
+  const raw = String(valor || "").trim();
+  if (!raw) return "";
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+    const [yyyy, mm, dd] = raw.split("-");
+    return `${dd}/${mm}/${yyyy}`;
+  }
+
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(raw)) {
+    return raw;
+  }
+
+  return raw;
+}
+
+function extrairDadosEtiquetaWord() {
+  const loc = (el("localizacao") && el("localizacao").value) || "";
+  const dataFolha = (el("dataFolha") && el("dataFolha").value) || "";
+  const dataScan = (el("data") && el("data").value) || "";
+
+  let serie = "";
+  let localCurto = "";
+  let armazem = "";
+
+  const parts = loc.split(" - ").map(v => v.trim()).filter(Boolean);
+  if (parts.length >= 3) {
+    serie = parts[0] || "";
+    armazem = parts[1] || "";
+    localCurto = parts.slice(2).join(" - ");
+  } else {
+    localCurto = loc || "Sem Localização";
+  }
+
+  const dataEtiqueta = formatDatePTAppBraga(dataFolha || dataScan);
+
+  return {
+    serie: serie || "SEM SÉRIE",
+    localCurto: localCurto || "Sem Localização",
+    armazem: armazem || "",
+    dataEtiqueta: dataEtiqueta || formatDatePTAppBraga(dataScan) || "Sem Data"
+  };
+}
+
+async function gerarWordEtiquetaFromForm(auto = false) {
+  try {
+    if (typeof docx === "undefined") {
+      mostrarMensagem("Biblioteca Word não carregada.", "erro");
+      return;
+    }
+
+    const dados = extrairDadosEtiquetaWord();
+
+    if (!dados.localCurto || !dados.serie) {
+      mostrarMensagem("Faltam dados para gerar a etiqueta Word.", "erro");
+      return;
+    }
+
+    const {
+      Document,
+      Packer,
+      Paragraph,
+      AlignmentType,
+      TextRun,
+      HeadingLevel
+    } = docx;
+
+    const doc = new Document({
+      creator: "App Braga",
+      title: "Etiqueta Toner",
+      description: "Etiqueta gerada automaticamente pelo scan OCR",
+      sections: [
+        {
+          properties: {},
+          children: [
+            new Paragraph({
+              alignment: AlignmentType.CENTER,
+              spacing: { before: 3200, after: 500 },
+              children: [
+                new TextRun({
+                  text: dados.localCurto,
+                  bold: true,
+                  size: 42
+                })
+              ]
+            }),
+            new Paragraph({
+              alignment: AlignmentType.CENTER,
+              spacing: { before: 200, after: 2800 },
+              children: [
+                new TextRun({
+                  text: dados.serie,
+                  bold: true,
+                  size: 64
+                })
+              ]
+            }),
+            new Paragraph({
+              alignment: AlignmentType.CENTER,
+              spacing: { before: 0, after: 200 },
+              children: [
+                new TextRun({
+                  text: dados.dataEtiqueta,
+                  bold: true,
+                  size: 56
+                })
+              ]
+            })
+          ]
+        }
+      ]
+    });
+
+    const blob = await Packer.toBlob(doc);
+    const fileName = `Etiqueta_${dados.localCurto.replace(/\s+/g, "_")}_${dados.serie}.docx`;
+
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      URL.revokeObjectURL(a.href);
+      a.remove();
+    }, 1200);
+
+    if (!auto) {
+      mostrarMensagem("Etiqueta Word gerada com sucesso.");
+    }
+  } catch (error) {
+    console.error("Erro ao gerar Word:", error);
+    mostrarMensagem("Erro ao gerar a etiqueta Word.", "erro");
+  }
+}
+
+window.gerarWordEtiquetaFromForm = gerarWordEtiquetaFromForm;

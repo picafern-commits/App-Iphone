@@ -1,3 +1,1 @@
-self.addEventListener("install", e=>{
-e.waitUntil(caches.open("app").then(cache=>cache.addAll(["index.html","style.css","script.js"])));
-});
+self.addEventListener("install",e=>self.skipWaiting());self.addEventListener("activate",e=>e.waitUntil(self.clients.claim()));self.addEventListener("fetch",()=>{});
