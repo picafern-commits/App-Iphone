@@ -3294,3 +3294,48 @@ async function gerarWordEtiquetaFromForm(auto = false) {
 }
 
 window.gerarWordEtiquetaFromForm = gerarWordEtiquetaFromForm;
+
+
+/* SIDEBAR MOBILE FIX */
+function toggleSidebar() {
+  const sidebar = document.querySelector(".sidebar");
+  const overlay = document.getElementById("sidebarOverlay");
+  if (!sidebar) return;
+
+  const isOpen = sidebar.classList.contains("open");
+
+  if (isOpen) {
+    sidebar.classList.remove("open");
+    if (overlay) overlay.classList.remove("show");
+  } else {
+    sidebar.classList.add("open");
+    if (overlay) overlay.classList.add("show");
+  }
+}
+
+function closeSidebar() {
+  const sidebar = document.querySelector(".sidebar");
+  const overlay = document.getElementById("sidebarOverlay");
+
+  if (sidebar) sidebar.classList.remove("open");
+  if (overlay) overlay.classList.remove("show");
+}
+
+window.addEventListener("resize", () => {
+  if (window.innerWidth > 900) {
+    closeSidebar();
+  }
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+  document.querySelectorAll(".sidebar a").forEach(link => {
+    link.addEventListener("click", () => {
+      if (window.innerWidth <= 900) {
+        closeSidebar();
+      }
+    });
+  });
+});
+
+window.toggleSidebar = toggleSidebar;
+window.closeSidebar = closeSidebar;

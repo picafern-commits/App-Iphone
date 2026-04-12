@@ -1194,3 +1194,54 @@ body.dark .app-version-mini {
   color: var(--muted);
   font-size: 13px;
 }
+
+
+@media (max-width: 900px) {
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: -280px;
+    width: 260px;
+    height: 100vh;
+    z-index: 1200;
+    transition: left 0.25s ease;
+    overflow-y: auto;
+  }
+
+  .sidebar.open {
+    left: 0;
+  }
+
+  .main {
+    margin-left: 0 !important;
+    width: 100% !important;
+    padding-top: 76px;
+  }
+
+  .mobile-menu-btn {
+    position: fixed;
+    top: 14px;
+    left: 14px;
+    z-index: 1300;
+    min-width: 46px;
+    min-height: 46px;
+    border: none;
+    border-radius: 12px;
+    background: var(--card);
+    color: var(--text);
+    box-shadow: var(--shadow);
+    font-size: 22px;
+  }
+
+  .sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.45);
+    z-index: 1100;
+    display: none;
+  }
+
+  .sidebar-overlay.show {
+    display: block;
+  }
+}
