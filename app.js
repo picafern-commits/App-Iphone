@@ -3834,3 +3834,24 @@ window.editarPistola = editarPistola;
 window.fecharEditarPistola = fecharEditarPistola;
 window.guardarEdicaoPistola = guardarEdicaoPistola;
 window.apagarPistola = apagarPistola;
+
+
+function renderGestao() {
+  const score = Math.max(0, 100 - (stockGlobal.length < 5 ? 40 : 0));
+  const elScore = document.getElementById("gestaoScore");
+  if(elScore){
+    elScore.innerHTML = `<h4>Score Sistema: ${score}</h4>`;
+  }
+
+  const elPrior = document.getElementById("gestaoPrioridades");
+  if(elPrior){
+    elPrior.innerHTML = `<p>Prioridade: verificar stock crítico</p>`;
+  }
+
+  const elRec = document.getElementById("gestaoRecomendacoes");
+  if(elRec){
+    elRec.innerHTML = `<p>Recomendação: repor toners críticos</p>`;
+  }
+}
+
+renderGestao();
