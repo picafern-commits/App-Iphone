@@ -1384,6 +1384,7 @@ db.collection("stock").orderBy("created", "desc").onSnapshot(snap => {
   renderDashboardCards(stockGlobal);
   renderStockCards(stockGlobal);
   renderDashboardResumoInteligente();
+  renderModoGestorExtremo();
 }, error => {
   console.error(error);
   stockGlobal = loadBackupAppBraga(BACKUP_KEYS_APP_BRAGA.stock);
@@ -1392,6 +1393,7 @@ db.collection("stock").orderBy("created", "desc").onSnapshot(snap => {
   renderDashboardCards(stockGlobal);
   renderStockCards(stockGlobal);
   renderDashboardResumoInteligente();
+  renderModoGestorExtremo();
 });
 
 db.collection("historico").orderBy("created", "desc").onSnapshot(snap => {
@@ -1407,14 +1409,18 @@ db.collection("historico").orderBy("created", "desc").onSnapshot(snap => {
   saveBackupAppBraga(BACKUP_KEYS_APP_BRAGA.historico, historicoGlobal);
   hideBackupBadge();
   renderHistoricoCards(historicoGlobal);
+  renderModoGestorExtremo();
   renderDashboardResumoInteligente();
+  renderModoGestorExtremo();
 }, error => {
   console.error(error);
   historicoGlobal = loadBackupAppBraga(BACKUP_KEYS_APP_BRAGA.historico);
   setText("countUsados", historicoGlobal.length);
   showBackupBadge();
   renderHistoricoCards(historicoGlobal);
+  renderModoGestorExtremo();
   renderDashboardResumoInteligente();
+  renderModoGestorExtremo();
 });
 
 db.collection("pcs").orderBy("created", "desc").onSnapshot(snap => {
@@ -1430,12 +1436,14 @@ db.collection("pcs").orderBy("created", "desc").onSnapshot(snap => {
   saveBackupAppBraga(BACKUP_KEYS_APP_BRAGA.pcs, pcsGlobal);
   hideBackupBadge();
   renderPCCards(pcsGlobal);
+  renderModoGestorExtremo();
 }, error => {
   console.error(error);
   pcsGlobal = loadBackupAppBraga(BACKUP_KEYS_APP_BRAGA.pcs);
   setText("countPCs", pcsGlobal.length);
   showBackupBadge();
   renderPCCards(pcsGlobal);
+  renderModoGestorExtremo();
 });
 
 db.collection("manutencoes").orderBy("created", "desc").onSnapshot(snap => {
@@ -1521,35 +1529,33 @@ function renderDashboardResumoInteligente() {
   if (!host) return;
 
   const buckets = getCriticalityBucketsAppBraga();
-  const topLocs = getTopLocalizacoesHistorico(3);
-  const ultimos = getUltimosMovimentos(3);
+  const topLocs = getTopLocalizacoesHistorico(4);
+  const ultimos = getUltimosMovimentos(4);
+
+  const critLabel = buckets.critical > 0 ? "Ação imediata" : "Sem críticos";
+  const warnLabel = buckets.warning > 0 ? "Vigiar" : "Sem avisos";
 
   host.innerHTML = `
     <div class="summary-grid">
       <div class="summary-card">
         <h4>Criticidade Real</h4>
         <div class="summary-value">${buckets.critical}</div>
-        <div class="meta-line">Críticas &lt; 10%</div>
+        <div class="meta-line">${critLabel} · toner abaixo de 10%</div>
       </div>
       <div class="summary-card">
         <h4>Atenção</h4>
         <div class="summary-value">${buckets.warning}</div>
-        <div class="meta-line">Entre 10% e 25%</div>
+        <div class="meta-line">${warnLabel} · entre 10% e 25%</div>
       </div>
       <div class="summary-card">
         <h4>Top Localizações</h4>
-        <ul class="summary-list">
-          ${topLocs.length ? topLocs.map(([k,v]) => `<li>${k} — ${v}</li>`).join("") : "<li>Sem dados</li>"}
-        </ul>
+        <ul class="summary-list">${topLocs.length ? topLocs.map(([k,v]) => `<li>${k} — ${v}</li>`).join("") : "<li>Sem dados ainda</li>"}</ul>
       </div>
       <div class="summary-card">
         <h4>Últimos Movimentos</h4>
-        <ul class="summary-list">
-          ${ultimos.length ? ultimos.map(item => `<li>${item.equipamento || "-"} · ${item.cor || "-"} · ${item.localizacao || "-"}</li>`).join("") : "<li>Sem histórico</li>"}
-        </ul>
+        <ul class="summary-list">${ultimos.length ? ultimos.map(item => `<li>${item.equipamento || "-"} · ${item.cor || "-"} · ${item.localizacao || "-"}</li>`).join("") : "<li>Sem histórico ainda</li>"}</ul>
       </div>
-    </div>
-  `;
+    </div>`;
 }
 
 function renderDashboardCards(items) {
@@ -2363,7 +2369,9 @@ function renderPistolas(lista = pistolasData) {
 
   atualizarContadoresPistolas(lista);
 
-  container.innerHTML = lista.map(p => `
+  container.innerHTML = lista.map((p, index) => {
+    const ref = p.idDoc ? `'${p.idDoc}'` : index;
+    return `
     <div class="pc-card">
       <div class="pc-name">${p.nome}</div>
       <div class="meta-line">Nº: <span class="meta-value">${p.num}</span></div>
@@ -2375,8 +2383,13 @@ function renderPistolas(lista = pistolasData) {
       <div class="meta-line">Armazém: <span class="meta-value">${p.armazem}</span></div>
       <div class="meta-line">Prontas: <span class="meta-value">${p.prontas}</span></div>
       <div class="meta-line">Estado: <span class="meta-value">${badgePistolaReserva(p.operador)}</span></div>
+      <div class="item-actions">
+        <button class="secondary-btn" onclick="editarPistola(${ref})">Editar</button>
+        <button class="secondary-btn" onclick="apagarPistola(${ref})">Apagar</button>
+      </div>
     </div>
-  `).join("");
+  `;
+  }).join("");
 }
 
 function filtrarPistolas(txt = "") {
@@ -2458,8 +2471,9 @@ function renderPortas(lista = portasData) {
 
   atualizarContadoresPortas(lista);
 
-  container.innerHTML = lista.map(p => {
+  container.innerHTML = lista.map((p, index) => {
     const estado = estadoPorta(p);
+    const ref = p.idDoc ? `'${p.idDoc}'` : index;
     return `
       <div class="pc-card">
         <div class="pc-name">Porta ${p.porta || "-"}</div>
@@ -2468,6 +2482,10 @@ function renderPortas(lista = portasData) {
         <div class="meta-line">Equipamento: <span class="meta-value">${p.equipamento || "-"}</span></div>
         <div class="meta-line">IP: <span class="meta-value">${p.ip ? `<a href="http://${p.ip}" target="_blank">${p.ip}</a>` : "-"}</span></div>
         <div class="meta-line">Estado: <span class="meta-value">${badgePorta(estado)}</span></div>
+        <div class="item-actions">
+          <button class="secondary-btn" onclick="editarPorta(${ref})">Editar</button>
+          <button class="secondary-btn" onclick="apagarPorta(${ref})">Apagar</button>
+        </div>
       </div>
     `;
   }).join("");
@@ -2529,7 +2547,9 @@ function renderUsers(lista = usersData) {
 
   atualizarContadoresUsers(lista);
 
-  container.innerHTML = lista.map(u => `
+  container.innerHTML = lista.map((u, index) => {
+    const ref = u.idDoc ? `'${u.idDoc}'` : index;
+    return `
     <div class="pc-card">
       <div class="pc-name">${u.nome}</div>
       <div class="meta-line">Zona: <span class="meta-value">${u.zona || "-"}</span></div>
@@ -2544,11 +2564,13 @@ function renderUsers(lista = usersData) {
       <div class="meta-line">Pw MO365: <span class="meta-value">${u.pw_mo365 || "-"}</span></div>
       <div class="meta-line">Email Bragalis: <span class="meta-value">${u.email_bragalis || "-"}</span></div>
       <div class="meta-line">Pass Bragalis: <span class="meta-value">${u.pass_bragalis || "-"}</span></div>
-      <div class="meta-line">MO365: <span class="meta-value">${badgeUser(utilizadorTemMO365(u))}</span></div>
-      <div class="meta-line">Pistola: <span class="meta-value">${badgeUser(utilizadorTemPistola(u))}</span></div>
-      <div class="meta-line">TeamViewer ativo: <span class="meta-value">${badgeUser(utilizadorTemTeamviewer(u))}</span></div>
+      <div class="item-actions">
+        <button class="secondary-btn" onclick="editarUser(${ref})">Editar</button>
+        <button class="secondary-btn" onclick="apagarUser(${ref})">Apagar</button>
+      </div>
     </div>
-  `).join("");
+  `;
+  }).join("");
 }
 
 function filtrarUsers(txt = "") {
@@ -3527,15 +3549,43 @@ window.addEventListener("DOMContentLoaded", () => {
 });
 
 
+/* ===== AUTO UPDATE PRO FINAL ===== */
+const APP_REMOTE_BASE = "https://picafern-commits.github.io/App-Tablet/";
+const APP_VERSION_URL = APP_REMOTE_BASE + "version.json?t=" + Date.now();
+
+async function limparServiceWorkersAntigosAppBraga() {
+  try {
+    if (!("serviceWorker" in navigator)) return;
+    const regs = await navigator.serviceWorker.getRegistrations();
+    for (const reg of regs) {
+      await reg.unregister();
+    }
+    if ("caches" in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map(k => caches.delete(k)));
+    }
+  } catch (e) {
+    console.error("Erro a limpar service workers/cache", e);
+  }
+}
+
 async function verificarAtualizacao() {
   try {
-    const res = await fetch("https://picafern-commits.github.io/App-Tablet/version.json?t=" + Date.now(), { cache: "no-store" });
-    const data = await res.json();
+    await limparServiceWorkersAntigosAppBraga();
 
-    atualizarVersaoUI(data && data.version ? data.version : APP_VERSION);
+    const res = await fetch(APP_VERSION_URL, {
+      cache: "no-store",
+      headers: {
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        "Pragma": "no-cache"
+      }
+    });
+
+    const data = await res.json();
+    atualizarVersaoUI((data && data.version) ? data.version : APP_VERSION);
 
     if (data && data.version && data.version !== APP_VERSION) {
-      mostrarAvisoUpdate(data.version);
+      mostrarAvisoUpdateObrigatorio(data.version);
     }
   } catch (e) {
     console.error("Erro a verificar updates", e);
@@ -3552,37 +3602,422 @@ function atualizarVersaoUI(versionValue = APP_VERSION) {
   });
 }
 
-function mostrarAvisoUpdate(novaVersao) {
+function mostrarAvisoUpdateObrigatorio(novaVersao) {
+  let overlay = document.getElementById("updateOverlayAppBraga");
   let box = document.getElementById("updateBoxAppBraga");
+
+  if (!overlay) {
+    overlay = document.createElement("div");
+    overlay.id = "updateOverlayAppBraga";
+    overlay.className = "update-overlay-appbraga";
+    document.body.appendChild(overlay);
+  }
 
   if (!box) {
     box = document.createElement("div");
     box.id = "updateBoxAppBraga";
-    box.className = "update-box-appbraga";
+    box.className = "update-box-appbraga mandatory";
     document.body.appendChild(box);
   }
 
   box.innerHTML = `
-    <div class="update-title">🚀 Nova versão disponível</div>
+    <div class="update-title">🚀 Atualização obrigatória</div>
     <div class="update-subtitle">
+      Esta app está desatualizada e precisa de ser atualizada para continuar.<br><br>
       Atual: v${APP_VERSION} Premium<br>
       Nova: v${novaVersao} Premium
     </div>
     <div class="update-actions">
-      <button class="primary-btn" onclick="atualizarApp()">Atualizar</button>
-      <button class="secondary-btn" onclick="fecharAvisoUpdate()">Fechar</button>
+      <button class="primary-btn" onclick="atualizarAppObrigatorio()">Atualizar agora</button>
     </div>
   `;
+
+  document.body.style.overflow = "hidden";
 }
 
-function fecharAvisoUpdate() {
+function atualizarAppObrigatorio() {
   const box = document.getElementById("updateBoxAppBraga");
-  if (box) box.remove();
-}
+  if (box) {
+    box.innerHTML = `
+      <div class="update-title">⏳ A atualizar...</div>
+      <div class="update-subtitle">A abrir a versão mais recente da app.</div>
+    `;
+  }
 
-function atualizarApp() {
-  window.location.reload();
+  const target = APP_REMOTE_BASE + "?update=" + Date.now();
+
+  setTimeout(async () => {
+    try {
+      await limparServiceWorkersAntigosAppBraga();
+    } catch (e) {
+      console.error(e);
+    }
+
+    try {
+      window.location.replace(target);
+    } catch (e) {
+      window.location.href = target;
+    }
+  }, 400);
 }
 
 window.addEventListener("load", verificarAtualizacao);
 window.addEventListener("load", () => atualizarVersaoUI(APP_VERSION));
+
+
+
+/* ===== CRUD EXTRA: Portas, Users, Pistolas ===== */
+function itemPorRef(lista, ref) {
+  if (typeof ref === "string") {
+    return lista.find(i => i.idDoc === ref) || null;
+  }
+  const idx = Number(ref);
+  return Number.isNaN(idx) ? null : (lista[idx] || null);
+}
+
+function idxPorRef(lista, ref) {
+  if (typeof ref === "string") {
+    return lista.findIndex(i => i.idDoc === ref);
+  }
+  const idx = Number(ref);
+  return Number.isNaN(idx) ? -1 : idx;
+}
+
+/* Portas */
+let portaEditRef = null;
+
+function editarPorta(ref) {
+  const item = itemPorRef(portasData, ref);
+  if (!item) return mostrarMensagem("Porta não encontrada.", "erro");
+  portaEditRef = ref;
+  if (el("editPorta")) el("editPorta").value = item.porta || "";
+  if (el("editLocal")) el("editLocal").value = item.local || "";
+  if (el("editUser")) el("editUser").value = item.user || "";
+  if (el("editEquipamento")) el("editEquipamento").value = item.equipamento || "";
+  if (el("editIP")) el("editIP").value = item.ip || "";
+  if (el("modalEditarPorta")) el("modalEditarPorta").style.display = "flex";
+}
+
+function fecharEditarPorta() {
+  portaEditRef = null;
+  if (el("modalEditarPorta")) el("modalEditarPorta").style.display = "none";
+}
+
+async function guardarEdicaoPorta() {
+  if (portaEditRef === null || typeof portaEditRef === "undefined") return mostrarMensagem("Nenhuma porta selecionada.", "erro");
+  const payload = {
+    porta: el("editPorta") ? el("editPorta").value : "",
+    local: el("editLocal") ? el("editLocal").value : "",
+    user: el("editUser") ? el("editUser").value : "",
+    equipamento: el("editEquipamento") ? el("editEquipamento").value : "",
+    ip: el("editIP") ? el("editIP").value : ""
+  };
+
+  try {
+    if (typeof portaEditRef === "string" && window.db) {
+      await db.collection("portas").doc(portaEditRef).update(payload);
+      const idx = idxPorRef(portasData, portaEditRef);
+      if (idx >= 0) portasData[idx] = { ...portasData[idx], ...payload };
+    } else {
+      const idx = idxPorRef(portasData, portaEditRef);
+      if (idx >= 0) portasData[idx] = { ...portasData[idx], ...payload };
+    }
+    fecharEditarPorta();
+    renderPortas(portasData);
+    mostrarMensagem("Porta atualizada com sucesso.");
+  } catch (e) {
+    console.error(e);
+    mostrarMensagem("Erro ao atualizar a porta.", "erro");
+  }
+}
+
+async function apagarPorta(ref) {
+  if (!confirm("Queres apagar esta porta?")) return;
+  try {
+    if (typeof ref === "string" && window.db) {
+      await db.collection("portas").doc(ref).delete();
+    }
+    const idx = idxPorRef(portasData, ref);
+    if (idx >= 0) portasData.splice(idx, 1);
+    renderPortas(portasData);
+    mostrarMensagem("Porta apagada com sucesso.");
+  } catch (e) {
+    console.error(e);
+    mostrarMensagem("Erro ao apagar a porta.", "erro");
+  }
+}
+
+/* Users */
+let userEditRef = null;
+
+function editarUser(ref) {
+  const item = itemPorRef(usersData, ref);
+  if (!item) return mostrarMensagem("User não encontrado.", "erro");
+  userEditRef = ref;
+  const fields = ["nome","zona","user_pc_eye","pass_remote","pass_eye_peak","op_pistola","pass_pistola","nome_pc","teamviewer","user_mo365","pw_mo365","email_bragalis","pass_bragalis"];
+  fields.forEach(f => { const node = el("editUser_" + f); if (node) node.value = item[f] || ""; });
+  if (el("modalEditarUser")) el("modalEditarUser").style.display = "flex";
+}
+
+function fecharEditarUser() {
+  userEditRef = null;
+  if (el("modalEditarUser")) el("modalEditarUser").style.display = "none";
+}
+
+async function guardarEdicaoUser() {
+  if (userEditRef === null || typeof userEditRef === "undefined") return mostrarMensagem("Nenhum user selecionado.", "erro");
+  const payload = {};
+  ["nome","zona","user_pc_eye","pass_remote","pass_eye_peak","op_pistola","pass_pistola","nome_pc","teamviewer","user_mo365","pw_mo365","email_bragalis","pass_bragalis"].forEach(f => {
+    payload[f] = el("editUser_" + f) ? el("editUser_" + f).value : "";
+  });
+
+  try {
+    if (typeof userEditRef === "string" && window.db) {
+      await db.collection("users").doc(userEditRef).update(payload);
+      const idx = idxPorRef(usersData, userEditRef);
+      if (idx >= 0) usersData[idx] = { ...usersData[idx], ...payload };
+    } else {
+      const idx = idxPorRef(usersData, userEditRef);
+      if (idx >= 0) usersData[idx] = { ...usersData[idx], ...payload };
+    }
+    fecharEditarUser();
+    renderUsers(usersData);
+    mostrarMensagem("User atualizado com sucesso.");
+  } catch (e) {
+    console.error(e);
+    mostrarMensagem("Erro ao atualizar o user.", "erro");
+  }
+}
+
+async function apagarUser(ref) {
+  if (!confirm("Queres apagar este user?")) return;
+  try {
+    if (typeof ref === "string" && window.db) {
+      await db.collection("users").doc(ref).delete();
+    }
+    const idx = idxPorRef(usersData, ref);
+    if (idx >= 0) usersData.splice(idx, 1);
+    renderUsers(usersData);
+    mostrarMensagem("User apagado com sucesso.");
+  } catch (e) {
+    console.error(e);
+    mostrarMensagem("Erro ao apagar o user.", "erro");
+  }
+}
+
+/* Pistolas */
+let pistolaEditRef = null;
+
+function editarPistola(ref) {
+  const item = itemPorRef(pistolasData, ref);
+  if (!item) return mostrarMensagem("Pistola não encontrada.", "erro");
+  pistolaEditRef = ref;
+  ["num","nome","password","cn","sn","mac","operador","armazem","prontas"].forEach(f => {
+    const node = el("editP_" + f);
+    if (node) node.value = item[f] || "";
+  });
+  if (el("modalEditarPistola")) el("modalEditarPistola").style.display = "flex";
+}
+
+function fecharEditarPistola() {
+  pistolaEditRef = null;
+  if (el("modalEditarPistola")) el("modalEditarPistola").style.display = "none";
+}
+
+async function guardarEdicaoPistola() {
+  if (pistolaEditRef === null || typeof pistolaEditRef === "undefined") return mostrarMensagem("Nenhuma pistola selecionada.", "erro");
+  const payload = {};
+  ["num","nome","password","cn","sn","mac","operador","armazem","prontas"].forEach(f => {
+    payload[f] = el("editP_" + f) ? el("editP_" + f).value : "";
+  });
+
+  try {
+    if (typeof pistolaEditRef === "string" && window.db) {
+      await db.collection("pistolas").doc(pistolaEditRef).update(payload);
+      const idx = idxPorRef(pistolasData, pistolaEditRef);
+      if (idx >= 0) pistolasData[idx] = { ...pistolasData[idx], ...payload };
+    } else {
+      const idx = idxPorRef(pistolasData, pistolaEditRef);
+      if (idx >= 0) pistolasData[idx] = { ...pistolasData[idx], ...payload };
+    }
+    fecharEditarPistola();
+    renderPistolas(pistolasData);
+    mostrarMensagem("Pistola atualizada com sucesso.");
+  } catch (e) {
+    console.error(e);
+    mostrarMensagem("Erro ao atualizar a pistola.", "erro");
+  }
+}
+
+async function apagarPistola(ref) {
+  if (!confirm("Queres apagar esta pistola?")) return;
+  try {
+    if (typeof ref === "string" && window.db) {
+      await db.collection("pistolas").doc(ref).delete();
+    }
+    const idx = idxPorRef(pistolasData, ref);
+    if (idx >= 0) pistolasData.splice(idx, 1);
+    renderPistolas(pistolasData);
+    mostrarMensagem("Pistola apagada com sucesso.");
+  } catch (e) {
+    console.error(e);
+    mostrarMensagem("Erro ao apagar a pistola.", "erro");
+  }
+}
+
+window.editarPorta = editarPorta;
+window.fecharEditarPorta = fecharEditarPorta;
+window.guardarEdicaoPorta = guardarEdicaoPorta;
+window.apagarPorta = apagarPorta;
+
+window.editarUser = editarUser;
+window.fecharEditarUser = fecharEditarUser;
+window.guardarEdicaoUser = guardarEdicaoUser;
+window.apagarUser = apagarUser;
+
+window.editarPistola = editarPistola;
+window.fecharEditarPistola = fecharEditarPistola;
+window.guardarEdicaoPistola = guardarEdicaoPistola;
+window.apagarPistola = apagarPistola;
+
+
+/* ===== MODO VISUAL ===== */
+function modoVisualInit() {
+  document.body.classList.add("modo-visual-on");
+  document.querySelectorAll(".panel, .pc-card, .dashboard-card, .stock-card, .history-card").forEach((node, index) => {
+    node.style.opacity = "0";
+    node.style.transform = "translateY(8px)";
+    setTimeout(() => {
+      node.style.transition = "opacity 0.24s ease, transform 0.24s ease";
+      node.style.opacity = "1";
+      node.style.transform = "translateY(0)";
+    }, 25 * Math.min(index, 10));
+  });
+}
+
+window.addEventListener("load", modoVisualInit);
+
+
+/* ===== MODO GESTOR EXTREMO ===== */
+function getTopConsumoEquipamentos(limit = 4) {
+  const map = new Map();
+  historicoGlobal.forEach(item => {
+    const key = `${item.equipamento || "-"} · ${item.localizacao || "-"}`;
+    map.set(key, (map.get(key) || 0) + 1);
+  });
+  return [...map.entries()].sort((a,b) => b[1]-a[1]).slice(0, limit);
+}
+
+function getTopProblemasDoDia(limit = 3) {
+  const buckets = getCriticalityBucketsAppBraga();
+  const topLocs = getTopLocalizacoesHistorico(2);
+  const ultimos = getUltimosMovimentos(1);
+  const problems = [];
+
+  if (buckets.critical > 0) {
+    problems.push(`Existem ${buckets.critical} impressoras em estado crítico.`);
+  }
+  if (buckets.warning > 0) {
+    problems.push(`Existem ${buckets.warning} impressoras em zona de atenção.`);
+  }
+  if (topLocs.length) {
+    problems.push(`Maior pressão recente em ${topLocs[0][0]} com ${topLocs[0][1]} movimentos.`);
+  }
+  if (ultimos.length) {
+    const u = ultimos[0];
+    problems.push(`Último movimento: ${u.equipamento || "-"} · ${u.cor || "-"} · ${u.localizacao || "-"}.`);
+  }
+
+  return problems.slice(0, limit);
+}
+
+function getPrioridadeMaximaGestor(limit = 4) {
+  const rows = [];
+  impressorasData.forEach(item => {
+    const info = tonerInfoState[item.ip] || null;
+    const colors = Array.isArray(info?.colors) ? info.colors : [];
+    const crit = colors.filter(c => typeof c.percent === "number" && c.percent <= 10);
+    if (crit.length) {
+      rows.push({
+        label: `${item.modelo} · ${item.localizacao}`,
+        detail: crit.map(c => `${c.label}: ${c.percent}%`).join(" | ")
+      });
+    }
+  });
+  return rows.slice(0, limit);
+}
+
+function renderModoGestorExtremo() {
+  const board = el("gestorExtremeBoard");
+  const prioridade = el("gestorPrioridadeMaxima");
+  const consumo = el("gestorTopConsumo");
+  const problemas = el("gestorTopProblemas");
+  if (!board && !prioridade && !consumo && !problemas) return;
+
+  const buckets = getCriticalityBucketsAppBraga();
+  const topLocs = getTopLocalizacoesHistorico(4);
+  const topEquip = getTopConsumoEquipamentos(4);
+  const topProb = getTopProblemasDoDia(3);
+  const maxRows = getPrioridadeMaximaGestor(4);
+
+  if (board) {
+    board.innerHTML = `
+      <div class="gestor-grid-hero">
+        <div class="gestor-hero-card">
+          <div class="gestor-hero-title">Estado executivo</div>
+          <div class="gestor-hero-value">${buckets.critical > 0 ? "Pressão" : "Estável"}</div>
+          <div class="gestor-hero-note">Visão imediata da operação para decidir onde agir primeiro.</div>
+          <div class="gestor-chip-row">
+            <span class="gestor-chip red">Críticos: ${buckets.critical}</span>
+            <span class="gestor-chip yellow">Atenção: ${buckets.warning}</span>
+            <span class="gestor-chip green">Stock: ${stockGlobal.length}</span>
+          </div>
+        </div>
+        <div class="gestor-card">
+          <h4>Movimento recente</h4>
+          <div class="gestor-mini-value">${historicoGlobal.length}</div>
+          <div class="meta-line">Total de registos usados no histórico.</div>
+        </div>
+        <div class="gestor-card">
+          <h4>Capacidade atual</h4>
+          <div class="gestor-mini-value">${stockGlobal.length}</div>
+          <div class="meta-line">Itens disponíveis agora em stock.</div>
+        </div>
+        <div class="gestor-card">
+          <h4>Base instalada</h4>
+          <div class="gestor-mini-value">${pcsGlobal.length}</div>
+          <div class="meta-line">PCs registados no sistema.</div>
+        </div>
+      </div>
+    `;
+  }
+
+  if (prioridade) {
+    prioridade.innerHTML = maxRows.length
+      ? maxRows.map(item => `<div class="gestor-priority-card"><h4>${item.label}</h4><div class="meta-line">${item.detail}</div></div>`).join("")
+      : `<div class="gestor-priority-card"><h4>Sem prioridade máxima</h4><div class="meta-line">Não existem impressoras abaixo de 10% neste momento.</div></div>`;
+  }
+
+  if (consumo) {
+    consumo.innerHTML = `
+      <div class="gestor-card">
+        <h4>Top Localizações</h4>
+        <ul class="gestor-list">
+          ${topLocs.length ? topLocs.map(([k,v]) => `<li>${k} — ${v} movimentos</li>`).join("") : "<li>Sem dados suficientes</li>"}
+        </ul>
+      </div>
+      <div class="gestor-card">
+        <h4>Top Equipamentos</h4>
+        <ul class="gestor-list">
+          ${topEquip.length ? topEquip.map(([k,v]) => `<li>${k} — ${v}</li>`).join("") : "<li>Sem dados suficientes</li>"}
+        </ul>
+      </div>
+    `;
+  }
+
+  if (problemas) {
+    problemas.innerHTML = topProb.length
+      ? topProb.map(txt => `<div class="gestor-alert-card"><h4>Ponto de gestão</h4><div class="meta-line">${txt}</div></div>`).join("")
+      : `<div class="gestor-alert-card"><h4>Sem alertas do dia</h4><div class="meta-line">Ainda não há dados suficientes para destacar problemas.</div></div>`;
+  }
+}
