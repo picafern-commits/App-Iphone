@@ -2519,6 +2519,12 @@ function badgeUser(valor) {
   return valor ? `<span class="badge ok">Sim</span>` : `<span class="badge livre">Não</span>`;
 }
 
+function garantirRefsLocaisUsers() {
+  usersData.forEach((u, index) => {
+    if (!u.idDoc && !u.__localRef) u.__localRef = `user-local-${index}`;
+  });
+}
+
 function atualizarContadoresUsers(lista = usersData) {
   setText("countUsers", lista.length);
   setText("countUsersMO365", lista.filter(utilizadorTemMO365).length);
@@ -2530,10 +2536,11 @@ function renderUsers(lista = usersData) {
   const container = el("listaUsers");
   if (!container) return;
 
+  garantirRefsLocaisUsers();
   atualizarContadoresUsers(lista);
 
-  container.innerHTML = lista.map((u, index) => {
-    const ref = u.idDoc ? `'${u.idDoc}'` : index;
+  container.innerHTML = lista.map((u) => {
+    const ref = JSON.stringify(u.idDoc || u.__localRef);
     return `
     <div class="pc-card">
       <div class="pc-name">${u.nome}</div>
@@ -2633,6 +2640,7 @@ window.addEventListener("DOMContentLoaded", () => {
   renderManutencoes(manutencoesGlobal);
   renderPistolas();
   renderPortas();
+  garantirRefsLocaisUsers();
   renderUsers();
 
   if (el("manutencaoSerie")) {
@@ -3629,7 +3637,7 @@ window.addEventListener("load", () => atualizarVersaoUI(APP_VERSION));
 /* ===== CRUD EXTRA: Portas, Users, Pistolas ===== */
 function itemPorRef(lista, ref) {
   if (typeof ref === "string") {
-    return lista.find(i => i.idDoc === ref) || null;
+    return lista.find(i => i.idDoc === ref || i.__localRef === ref) || null;
   }
   const idx = Number(ref);
   return Number.isNaN(idx) ? null : (lista[idx] || null);
@@ -3637,7 +3645,7 @@ function itemPorRef(lista, ref) {
 
 function idxPorRef(lista, ref) {
   if (typeof ref === "string") {
-    return lista.findIndex(i => i.idDoc === ref);
+    return lista.findIndex(i => i.idDoc === ref || i.__localRef === ref);
   }
   const idx = Number(ref);
   return Number.isNaN(idx) ? -1 : idx;
@@ -3741,7 +3749,7 @@ async function guardarEdicaoUser() {
       if (idx >= 0) usersData[idx] = { ...usersData[idx], ...payload };
     }
     fecharEditarUser();
-    renderUsers(usersData);
+    filtrarUsersComFiltros();
     mostrarMensagem("User atualizado com sucesso.");
   } catch (e) {
     console.error(e);
@@ -3757,7 +3765,7 @@ async function apagarUser(ref) {
     }
     const idx = idxPorRef(usersData, ref);
     if (idx >= 0) usersData.splice(idx, 1);
-    renderUsers(usersData);
+    filtrarUsersComFiltros();
     mostrarMensagem("User apagado com sucesso.");
   } catch (e) {
     console.error(e);
