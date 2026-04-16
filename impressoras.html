@@ -7,9 +7,6 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <title>Impressoras</title>
   <meta name="theme-color" content="#111827">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="App Braga">
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
   <link rel="apple-touch-icon" href="icon-192.png">
@@ -17,7 +14,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 </head>
-<body>
+<body class="iphone-premium-body">
 <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
 <div id="sidebarOverlay" class="sidebar-overlay" onclick="closeSidebar()"></div>
 <aside class="sidebar">
@@ -49,9 +46,9 @@
 <a href="users.html">Users</a>
 <a href="config.html">Configurações</a>
 </aside>
-<main class="main">
+<main class="main iphone-premium-main">
 
-  <div class="topbar premium-topbar"><div class="topbar-main"><h1>Impressoras</h1><p class="subtitle">Lista de impressoras, IPs e toner</p></div><div class="topbar-status"><span class="status-pill">Sistema Online</span><span class="version-pill" id="appVersion">v1.0.0 Premium</span></div></div>
+  <div class="topbar premium-topbar iphone-premium-topbar"><div class="topbar-main"><span class="iphone-page-kicker">App Braga</span><h1>Impressoras</h1><p class="subtitle">Lista de impressoras, IPs e toner</p></div><div class="topbar-status"><span class="status-pill">Sistema Online</span><span class="version-pill" id="appVersion">v1.0.0 Premium</span></div></div>
   <div class="stats-grid">
     <div class="stat-card"><span>Total</span><strong id="countImpressoras">0</strong></div>
     <div class="stat-card"><span>OK</span><strong id="countImpressorasOk">0</strong></div>
@@ -65,7 +62,8 @@
       <select id="filterEstadoImpressora" onchange="filtrarImpressoras()"><option value="">Todos os estados</option><option value="OK">OK</option><option value="Pendente">Pendente</option><option value="Em reparação">Em reparação</option><option value="Resolvido">Resolvido</option></select>
     </div>
     
-<table>
+<div id="impressorasCardsMobile" class="impressoras-mobile-cards"></div>
+    <table class="desktop-impressoras-table">
       <thead><tr><th>Modelo</th><th>Série</th><th>Armazém</th><th>Localização</th><th>IP</th><th>Estado</th><th>Ações</th></tr></thead>
       <tbody id="impressorasTableBody"></tbody>
     </table>

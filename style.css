@@ -1404,3 +1404,54 @@ html.dark .minimo-item, body.dark .minimo-item {
 .item-warning { color:#d97706; font-weight:700; }
 .item-ok { color:#16a34a; font-weight:700; }
 @media (max-width:780px){ .hist-advanced-toolbar { flex-direction:column; } }
+
+
+/* ===== iPhone Premium - Impressoras ===== */
+.impressoras-mobile-cards { display: none; }
+.desktop-impressoras-table { width: 100%; }
+.iphone-page-kicker { display:inline-block; font-size:12px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:rgba(255,255,255,.65); margin-bottom:10px; }
+@media (max-width: 900px) {
+  .iphone-premium-body { background: radial-gradient(circle at top, rgba(59,130,246,.14), transparent 30%), var(--bg); }
+  .iphone-premium-main { padding: calc(env(safe-area-inset-top) + 82px) 14px calc(env(safe-area-inset-bottom) + 20px) 14px !important; }
+  .iphone-premium-topbar { position: sticky; top: calc(env(safe-area-inset-top) + 8px); z-index: 50; padding: 14px 16px; background: rgba(2,6,23,.78); border:1px solid rgba(148,163,184,.16); border-radius:22px; box-shadow:0 18px 40px rgba(2,6,23,.28); backdrop-filter: blur(16px); margin-bottom:16px; }
+  .iphone-premium-topbar h1 { font-size:32px; line-height:1; margin-bottom:8px; }
+  .iphone-premium-topbar .subtitle { font-size:14px; }
+  .iphone-premium-topbar .topbar-status { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .iphone-premium-topbar .status-pill, .iphone-premium-topbar .version-pill { justify-content:center; min-height:42px; font-size:13px; border-radius:16px; }
+  .stats-grid { grid-template-columns: repeat(2, minmax(0,1fr)) !important; gap:12px; }
+  .stats-grid .stat-card { border-radius:22px; padding:18px 16px; }
+  .stats-grid .stat-card span { font-size:13px; }
+  .stats-grid .stat-card strong { font-size:28px; }
+  .panel { border-radius:24px; padding:16px; }
+  .toolbar { display:grid; grid-template-columns:1fr; gap:10px; }
+  .toolbar input, .toolbar select { min-height:52px; border-radius:16px; }
+  .desktop-impressoras-table { display:none; }
+  .impressoras-mobile-cards { display:grid; gap:14px; margin-top:8px; }
+  .printer-mobile-card { position:relative; background:linear-gradient(180deg, rgba(15,23,42,.96), rgba(15,23,42,.84)); border:1px solid rgba(148,163,184,.14); border-radius:24px; padding:16px; box-shadow:0 16px 40px rgba(2,6,23,.24); overflow:hidden; }
+  .printer-mobile-card::after { content:''; position:absolute; inset:auto 16px 0 16px; height:4px; border-radius:999px; background:linear-gradient(90deg, rgba(59,130,246,.95), rgba(96,165,250,.85)); }
+  .printer-mobile-card.good::after { background:linear-gradient(90deg, rgba(34,197,94,.95), rgba(74,222,128,.85)); }
+  .printer-mobile-card.attention::after { background:linear-gradient(90deg, rgba(245,158,11,.95), rgba(251,191,36,.85)); }
+  .printer-mobile-card.resolved::after { background:linear-gradient(90deg, rgba(59,130,246,.95), rgba(96,165,250,.85)); }
+  .printer-mobile-head { display:flex; justify-content:space-between; gap:12px; align-items:flex-start; margin-bottom:12px; }
+  .printer-mobile-head h3 { margin:0 0 6px; font-size:18px; font-weight:800; letter-spacing:-.02em; }
+  .printer-mobile-head p { margin:0; color:var(--muted); font-size:13px; }
+  .printer-mobile-badge { flex-shrink:0; min-height:30px; padding:6px 10px; border-radius:999px; background:rgba(255,255,255,.08); border:1px solid rgba(148,163,184,.16); font-size:11px; font-weight:800; display:inline-flex; align-items:center; }
+  .printer-mobile-meta { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px; }
+  .printer-mobile-meta div { padding:12px; border-radius:16px; background:rgba(255,255,255,.04); border:1px solid rgba(148,163,184,.12); }
+  .printer-mobile-meta span { display:block; font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin-bottom:6px; }
+  .printer-mobile-meta strong, .printer-mobile-meta a { font-size:14px; color:var(--text); text-decoration:none; word-break:break-all; }
+  .printer-mobile-toner { margin-bottom:14px; }
+  .printer-mobile-toner .printer-toner-box { width:100%; min-width:0; padding:14px; border-radius:18px; background:rgba(255,255,255,.04); }
+  .printer-mobile-toner .printer-toner-title { font-size:13px; }
+  .printer-mobile-toner .printer-toner-bar-wrap { height:14px; }
+  .printer-mobile-toner .printer-toner-value { font-size:14px; }
+  .printer-mobile-actions { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:6px; }
+  .printer-mobile-actions .action-btn { min-height:46px; border-radius:16px; font-weight:800; margin:0; }
+  #historicoImpressoraPanel { display:none; }
+}
+@media (max-width: 480px) {
+  .iphone-premium-main { padding-left:12px !important; padding-right:12px !important; }
+  .iphone-premium-topbar h1 { font-size:28px; }
+  .printer-mobile-meta, .printer-mobile-actions, .iphone-premium-topbar .topbar-status { grid-template-columns:1fr; }
+  .mobile-menu-btn { top: calc(env(safe-area-inset-top) + 10px); left:12px; border-radius:14px; }
+}
