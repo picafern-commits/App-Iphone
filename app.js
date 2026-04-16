@@ -1999,6 +1999,217 @@ function extrairPercentagemTonerDoHTML(html) {
 const tonerAlertState = {};
 const tonerInfoState = {};
 
+const TONER_ZERO_ALERTS_COLLECTION = "alertas_toner_zero";
+const APP_BRAGA_DEVICE_ID = (() => {
+  try {
+    const k = "appBragaDeviceId";
+    let v = localStorage.getItem(k);
+    if (!v) {
+      v = `dev_${Math.random().toString(36).slice(2, 10)}_${Date.now().toString(36)}`;
+      localStorage.setItem(k, v);
+    }
+    return v;
+  } catch {
+    return `dev_runtime_${Date.now()}`;
+  }
+})();
+let tonerZeroAlertsUnsubscribe = null;
+const tonerZeroSeenKeys = new Set();
+const tonerZeroSentState = {};
+
+function normalizarIpAppBraga(ip) {
+  return String(ip || "")
+    .trim()
+    .replace(/^https?:\/\//i, "")
+    .replace(/\/.*$/, "")
+    .replace(/\s+/g, "");
+}
+
+function isDesktopAppBraga() {
+  return !!(window.electronAPI && window.electronAPI.getTonerSNMP);
+}
+
+async function registerServiceWorkerAppBraga() {
+  try {
+    if (!("serviceWorker" in navigator)) return null;
+    const reg = await navigator.serviceWorker.register("./sw.js", { scope: "./" });
+    return reg;
+  } catch (e) {
+    console.error("Erro ao registar service worker:", e);
+    return null;
+  }
+}
+
+async function pedirPermissaoNotificacoesAppBraga() {
+  if (!("Notification" in window)) {
+    mostrarMensagem("Este dispositivo não suporta notificações.", "erro");
+    return "unsupported";
+  }
+  try {
+    const perm = await Notification.requestPermission();
+    if (perm === "granted") {
+      localStorage.setItem("appBragaNotificationsEnabled", "1");
+      mostrarMensagem("Notificações ativadas com sucesso.", "sucesso");
+    } else {
+      mostrarMensagem("As notificações ficaram bloqueadas neste dispositivo.", "erro");
+    }
+    atualizarPainelNotificacoesAppBraga();
+    return perm;
+  } catch (e) {
+    console.error("Erro a pedir permissão:", e);
+    return "error";
+  }
+}
+window.pedirPermissaoNotificacoesAppBraga = pedirPermissaoNotificacoesAppBraga;
+
+async function mostrarNotificacaoSistemaAppBraga(title, body, data = {}) {
+  try {
+    if (window.electronAPI && window.electronAPI.showSystemNotification) {
+      window.electronAPI.showSystemNotification(title, body);
+      return true;
+    }
+    if (!("Notification" in window) || Notification.permission !== "granted") return false;
+    const reg = await registerServiceWorkerAppBraga();
+    if (reg && reg.showNotification) {
+      await reg.showNotification(title, {
+        body,
+        icon: "./icon-192.png",
+        badge: "./icon-192.png",
+        tag: data.tag || undefined,
+        renotify: !!data.renotify,
+        requireInteraction: !!data.requireInteraction,
+        data: { url: data.url || "./impressoras.html", ip: data.ip || "" }
+      });
+      return true;
+    }
+    new Notification(title, { body });
+    return true;
+  } catch (e) {
+    console.error("Erro ao mostrar notificação:", e);
+    return false;
+  }
+}
+
+function extrairProblemasTonerZero(info) {
+  const issues = [];
+  (info && Array.isArray(info.colors) ? info.colors : []).forEach((item) => {
+    if (typeof item.percent === "number" && item.percent <= 0) {
+      issues.push(`${item.label}: 0%`);
+    }
+  });
+  return issues;
+}
+
+async function publicarAlertaTonerZero(ip, info) {
+  try {
+    const cleanIp = normalizarIpAppBraga(ip);
+    if (!cleanIp || !db) return;
+    const printer = impressorasData.find(i => normalizarIpAppBraga(i.ip) === cleanIp);
+    const printerLabel = printer ? `${printer.modelo} - ${printer.localizacao}` : cleanIp;
+    const issues = extrairProblemasTonerZero(info);
+    const docId = cleanIp.replace(/[^a-zA-Z0-9]/g, "_");
+    const payload = {
+      ip: cleanIp,
+      printerLabel,
+      issues,
+      active: issues.length > 0,
+      sourceDeviceId: APP_BRAGA_DEVICE_ID,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      updatedAtMs: Date.now(),
+      url: "./impressoras.html"
+    };
+    await db.collection(TONER_ZERO_ALERTS_COLLECTION).doc(docId).set(payload, { merge: true });
+  } catch (e) {
+    console.error("Erro a publicar alerta de toner 0%:", e);
+  }
+}
+
+async function tratarAlertaTonerZero(ip, info) {
+  const cleanIp = normalizarIpAppBraga(ip);
+  const issues = extrairProblemasTonerZero(info);
+  const key = issues.join(" | ");
+  const prev = tonerZeroSentState[cleanIp] || "";
+  if (!issues.length) {
+    tonerZeroSentState[cleanIp] = "";
+    await publicarAlertaTonerZero(cleanIp, info);
+    return;
+  }
+  if (prev === key) return;
+  tonerZeroSentState[cleanIp] = key;
+  await publicarAlertaTonerZero(cleanIp, info);
+
+  const printer = impressorasData.find(i => normalizarIpAppBraga(i.ip) === cleanIp);
+  const printerLabel = printer ? `${printer.modelo} - ${printer.localizacao}` : cleanIp;
+  const message = `${printerLabel} chegou a 0% — ${issues.join(" | ")}`;
+  mostrarMensagem(message, "erro");
+  await mostrarNotificacaoSistemaAppBraga("Toner a 0%", message, { tag: `toner-zero-${cleanIp}`, renotify: true, requireInteraction: true, ip: cleanIp, url: "./impressoras.html" });
+}
+
+function subscribeAlertasTonerZeroAppBraga() {
+  try {
+    if (!db || tonerZeroAlertsUnsubscribe) return;
+    tonerZeroAlertsUnsubscribe = db.collection(TONER_ZERO_ALERTS_COLLECTION)
+      .where("active", "==", true)
+      .onSnapshot((snap) => {
+        snap.docChanges().forEach(async (change) => {
+          if (change.type !== "added" && change.type !== "modified") return;
+          const data = change.doc.data() || {};
+          const updatedKey = `${change.doc.id}_${data.updatedAtMs || 0}`;
+          if (tonerZeroSeenKeys.has(updatedKey)) return;
+          tonerZeroSeenKeys.add(updatedKey);
+          if (data.sourceDeviceId === APP_BRAGA_DEVICE_ID) return;
+          const body = `${data.printerLabel || data.ip || "Impressora"} chegou a 0%${Array.isArray(data.issues) && data.issues.length ? ' — ' + data.issues.join(' | ') : ''}`;
+          await mostrarNotificacaoSistemaAppBraga("Toner a 0%", body, { tag: `toner-zero-${change.doc.id}`, renotify: true, requireInteraction: true, ip: data.ip || "", url: data.url || "./impressoras.html" });
+          mostrarMensagem(body, "erro");
+        });
+      }, (error) => console.error("Erro a ouvir alertas toner 0%:", error));
+  } catch (e) {
+    console.error("Erro nas notificações toner 0%:", e);
+  }
+}
+
+function criarPainelNotificacoesAppBraga() {
+  const darkSwitchRow = document.querySelector(".switch-row")?.closest(".panel");
+  if (!darkSwitchRow || document.getElementById("notificationsPanelAppBraga")) return;
+  const panel = document.createElement("div");
+  panel.className = "panel";
+  panel.id = "notificationsPanelAppBraga";
+  panel.innerHTML = `
+    <div class="section-header">
+      <div>
+        <h3>Notificações de toner a 0%</h3>
+        <p class="section-subtitle">Recebe um aviso quando uma impressora chegar a 0% de toner.</p>
+      </div>
+    </div>
+    <div class="meta-line"><span class="meta-value" id="notificationsStatusAppBraga">A verificar…</span></div>
+    <div class="card-actions" style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;">
+      <button class="primary-btn" type="button" onclick="pedirPermissaoNotificacoesAppBraga()">Ativar notificações</button>
+      <button class="secondary-btn" type="button" onclick="window.location.href='impressoras.html'">Ir para Impressoras</button>
+    </div>
+  `;
+  darkSwitchRow.insertAdjacentElement("afterend", panel);
+  atualizarPainelNotificacoesAppBraga();
+}
+
+function atualizarPainelNotificacoesAppBraga() {
+  const node = document.getElementById("notificationsStatusAppBraga");
+  if (!node) return;
+  if (!("Notification" in window)) {
+    node.textContent = "Este dispositivo não suporta notificações do browser.";
+    return;
+  }
+  if (Notification.permission === "granted") {
+    node.textContent = "Ativas neste dispositivo.";
+    return;
+  }
+  if (Notification.permission === "denied") {
+    node.textContent = "Bloqueadas neste dispositivo. Tens de permitir nas definições do browser/iPhone.";
+    return;
+  }
+  node.textContent = "Ainda não autorizadas.";
+}
+
+
 function corBarraToner(percentagem, cor = "black") {
   if (percentagem === null || percentagem === undefined) return "#94a3b8";
   if (cor === "cyan") return percentagem <= 20 ? "#0ea5e9" : percentagem <= 50 ? "#38bdf8" : "#06b6d4";
@@ -2184,6 +2395,7 @@ async function testarTonerImpressora(ip, outputId) {
 
   if (output) output.innerHTML = gerarHTMLToners(info);
   if (info) maybeNotifyCriticalSupply(ip, info);
+  if (info) tratarAlertaTonerZero(ip, info);
   renderDashboardCards();
 }
 
@@ -2197,6 +2409,7 @@ async function testarTodasAsImpressoras() {
       const info = await obterTonerInfo(item.ip);
       tonerInfoState[item.ip] = info || null;
       if (info) maybeNotifyCriticalSupply(item.ip, info);
+      if (info) tratarAlertaTonerZero(item.ip, info);
     }
   }
 
@@ -2759,6 +2972,7 @@ testarTodasAsImpressoras = async function() {
         el(alvoId).innerHTML = gerarHTMLToners(info);
       }
       if (info) maybeNotifyCriticalSupply(item.ip, info);
+      if (info) tratarAlertaTonerZero(item.ip, info);
     });
     renderDashboardCards();
     return;

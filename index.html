@@ -7,6 +7,9 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <title>Dashboard</title>
   <meta name="theme-color" content="#111827">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="App Braga">
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
   <link rel="apple-touch-icon" href="icon-192.png">
@@ -50,7 +53,7 @@
 
   <div class="topbar premium-topbar"><div class="topbar-main"><h1>Centro Operacional</h1><p class="subtitle">Resumo executivo do sistema e atividade recente</p></div><div class="topbar-status"><span class="status-pill">Sistema Online</span><span class="version-pill" id="appVersion">v1.0.0 Premium</span></div></div>
   <div class="stats-grid">
-    <div class="stat-card"><span>Estável</span><strong id="countStock">0</strong></div>
+    <div class="stat-card"><span>Stock</span><strong id="countStock">0</strong></div>
     <div class="stat-card"><span>Usados</span><strong id="countUsados">0</strong></div>
     <div class="stat-card"><span>PCs</span><strong id="countPCs">0</strong></div>
   </div>
@@ -67,7 +70,16 @@
 
   <div class="panel">
     <div class="toolbar"><input id="searchDashboard" type="text" placeholder="Pesquisar toners..." oninput="filtrarDashboard()"></div>
-
+    
+  <div class="panel">
+    <div class="section-header">
+      <div>
+        <h3>Alertas Inteligentes</h3>
+        <p class="section-subtitle">Notificações controladas do stock mínimo e criticidade real.</p>
+      </div>
+    </div>
+    <div id="alertasInteligentesDashboard" class="cards-list"></div>
+  </div>
 
 <div id="listaDashboardStock" class="cards-list"></div>
   </div>
