@@ -14,7 +14,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 </head>
-<body class="iphone-premium-body">
+<body>
 <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
 <div id="sidebarOverlay" class="sidebar-overlay" onclick="closeSidebar()"></div>
 <aside class="sidebar">
@@ -46,15 +46,55 @@
 <a href="users.html">Users</a>
 <a href="config.html">Configurações</a>
 </aside>
-<main class="main iphone-premium-main">
+<main class="main">
 
-  <div class="topbar premium-topbar iphone-premium-topbar"><div class="topbar-main"><span class="iphone-page-kicker">App Braga</span><h1>Impressoras</h1><p class="subtitle">Lista de impressoras, IPs e toner</p></div><div class="topbar-status"><span class="status-pill">Sistema Online</span><span class="version-pill" id="appVersion">v1.0.0 Premium</span></div></div>
+  <div class="topbar premium-topbar"><div class="topbar-main"><h1>Impressoras</h1><p class="subtitle">Lista de impressoras, IPs e toner</p></div><div class="topbar-status"><span class="status-pill">Sistema Online</span><span class="version-pill" id="appVersion">v1.0.0 Premium</span></div></div>
   <div class="stats-grid">
     <div class="stat-card"><span>Total</span><strong id="countImpressoras">0</strong></div>
     <div class="stat-card"><span>OK</span><strong id="countImpressorasOk">0</strong></div>
     <div class="stat-card"><span>Problema</span><strong id="countImpressorasProblema">0</strong></div>
     <div class="stat-card"><span>Resolvidas</span><strong id="countImpressorasResolvidas">0</strong></div>
   </div>
+
+  <div class="panel toner-diagnostics-panel">
+    <div class="section-header">
+      <div>
+        <h3>Diagnóstico do Toner</h3>
+        <p class="section-subtitle">Vê logo se a leitura de percentagens está a funcionar.</p>
+      </div>
+      <div class="table-actions">
+        <button class="action-btn" onclick="window.testarSistemaToner()">Testar sistema</button>
+      </div>
+    </div>
+    <div class="diagnostics-grid">
+      <div class="summary-card diagnostics-card">
+        <h4>Estado</h4>
+        <div class="diagnostics-status-row">
+          <span id="tonerDiagDot" class="diag-dot is-idle"></span>
+          <strong id="tonerDiagStatus">Sem teste</strong>
+        </div>
+      </div>
+      <div class="summary-card diagnostics-card">
+        <h4>Última leitura</h4>
+        <div class="summary-value small" id="tonerDiagLastRun">—</div>
+      </div>
+      <div class="summary-card diagnostics-card">
+        <h4>Origem</h4>
+        <div class="summary-value small" id="tonerDiagSource">—</div>
+      </div>
+      <div class="summary-card diagnostics-card">
+        <h4>Resumo</h4>
+        <div class="summary-value small" id="tonerDiagSummary">À espera de teste</div>
+      </div>
+    </div>
+    <div class="diagnostics-log-wrap">
+      <div class="meta-line"><span class="meta-label">Log recente</span></div>
+      <div id="tonerDiagLog" class="diagnostics-log">
+        <div class="diagnostics-log-item is-muted">Ainda sem leituras.</div>
+      </div>
+    </div>
+  </div>
+
   <div class="panel">
     <div class="toolbar">
       <input id="searchImpressoras" type="text" placeholder="Pesquisar..." oninput="filtrarImpressoras()">
@@ -62,8 +102,7 @@
       <select id="filterEstadoImpressora" onchange="filtrarImpressoras()"><option value="">Todos os estados</option><option value="OK">OK</option><option value="Pendente">Pendente</option><option value="Em reparação">Em reparação</option><option value="Resolvido">Resolvido</option></select>
     </div>
     
-<div id="impressorasCardsMobile" class="impressoras-mobile-cards"></div>
-    <table class="desktop-impressoras-table">
+<table>
       <thead><tr><th>Modelo</th><th>Série</th><th>Armazém</th><th>Localização</th><th>IP</th><th>Estado</th><th>Ações</th></tr></thead>
       <tbody id="impressorasTableBody"></tbody>
     </table>

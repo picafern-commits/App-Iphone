@@ -2184,6 +2184,8 @@ async function testarTonerImpressora(ip, outputId) {
 
   if (output) output.innerHTML = gerarHTMLToners(info);
   if (info) maybeNotifyCriticalSupply(ip, info);
+  updateTonerDiagnosticStatus(info ? "ok" : "error", { running: false, lastRunAt: new Date(), successCount: info ? 1 : 0, totalCount: 1, source: resolveDiagSource() });
+  pushTonerDiagnosticLog(ip, info ? summarizeTonerInfo(info) : "sem resposta");
   renderDashboardCards();
 }
 
@@ -2264,8 +2266,7 @@ function abrirHistoricoImpressora(item) {
 
 function renderImpressoras(lista = impressorasData) {
   const tbody = el("impressorasTableBody");
-  const mobileCards = el("impressorasCardsMobile");
-  if (!tbody && !mobileCards) return;
+  if (!tbody) return;
 
   const total = impressorasData.length;
   const ok = impressorasData.filter(i => obterEstadoImpressora(i.ip) === "OK").length;
@@ -2280,7 +2281,7 @@ function renderImpressoras(lista = impressorasData) {
   setText("countImpressorasProblema", problema);
   setText("countImpressorasResolvidas", resolvidas);
 
-  const rowsHtml = lista.map(item => {
+  tbody.innerHTML = lista.map(item => {
     const estado = obterEstadoImpressora(item.ip);
     const tonerId = `toner-${item.ip.replace(/\./g, "-")}`;
 
@@ -2304,38 +2305,6 @@ function renderImpressoras(lista = impressorasData) {
       </tr>
     `;
   }).join("");
-
-  const cardsHtml = lista.map(item => {
-    const estado = obterEstadoImpressora(item.ip);
-    const tonerId = `toner-mobile-${item.ip.replace(/\./g, "-")}`;
-    const estadoClass = String(estado || '').toLowerCase().includes('resolvido') ? 'resolved' : String(estado || '').toLowerCase().includes('ok') ? 'good' : 'attention';
-
-    return `
-      <article class="printer-mobile-card ${estadoClass}">
-        <div class="printer-mobile-head">
-          <div>
-            <h3>${item.modelo}</h3>
-            <p>${item.armazem} • ${item.localizacao}</p>
-          </div>
-          <span class="printer-mobile-badge">${estado}</span>
-        </div>
-        <div class="printer-mobile-meta">
-          <div><span>Série</span><strong>${item.serie}</strong></div>
-          <div><span>IP</span><strong><a href="http://${item.ip}" target="_blank" rel="noopener noreferrer">${item.ip}</a></strong></div>
-        </div>
-        <div class="printer-mobile-toner" id="${tonerId}">${gerarHTMLBarraToner(null)}</div>
-        <div class="printer-mobile-actions">
-          <button class="action-btn ip" onclick="abrirIP('${item.ip}')">Abrir IP</button>
-          <button class="action-btn manut" onclick='abrirManutencaoDireta(${JSON.stringify(item)})'>Manutenção</button>
-          <button class="action-btn" onclick='abrirHistoricoImpressora(${JSON.stringify(item)})'>Histórico</button>
-          <button class="action-btn" onclick="window.testarTonerImpressora('${item.ip}', '${tonerId}')">Atualizar</button>
-        </div>
-      </article>
-    `;
-  }).join("");
-
-  if (tbody) tbody.innerHTML = rowsHtml;
-  if (mobileCards) mobileCards.innerHTML = cardsHtml;
 }
 
 function filtrarImpressoras() {
@@ -2762,6 +2731,7 @@ function bindPrintersFirebaseRealtime() {
 
     renderDashboardCards();
     renderImpressoras();
+    renderTonerDiagnostics();
 
     const dashboardHasSearch = !!el("searchDashboard");
     if (dashboardHasSearch && normalizarTexto(el("searchDashboard")?.value || "")) {
@@ -2810,8 +2780,7 @@ abrirIP = function(ip) {
 const __originalRenderImpressoras = renderImpressoras;
 renderImpressoras = function(lista = impressorasData) {
   const tbody = el("impressorasTableBody");
-  const mobileCards = el("impressorasCardsMobile");
-  if (!tbody && !mobileCards) return __originalRenderImpressoras(lista);
+  if (!tbody) return __originalRenderImpressoras(lista);
 
   const total = impressorasData.length;
   const ok = impressorasData.filter(i => obterEstadoImpressora(i.ip) === "OK").length;
@@ -2828,7 +2797,7 @@ renderImpressoras = function(lista = impressorasData) {
 
   const webMode = !(window.electronAPI && window.electronAPI.getTonerSNMP);
 
-  const rowsHtml = lista.map(item => {
+  tbody.innerHTML = lista.map(item => {
     const estado = obterEstadoImpressora(item.ip);
     const tonerId = `toner-${item.ip.replace(/\./g, "-")}`;
     const info = printerFirebaseState[item.ip] ? mapFirebasePrinterInfo(printerFirebaseState[item.ip]) : (tonerInfoState[item.ip] || null);
@@ -2847,47 +2816,12 @@ renderImpressoras = function(lista = impressorasData) {
           <div class="table-actions" style="margin-top:8px;">
             ${webMode ? "" : `<button class="action-btn ip" onclick="abrirIP('${item.ip}')">Abrir IP</button>`}
             <button class="action-btn manut" onclick='abrirManutencaoDireta(${JSON.stringify(item)})'>Manutenção</button>
-            <button class="action-btn" onclick='abrirHistoricoImpressora(${JSON.stringify(item)})'>Histórico</button>
             ${webMode ? "" : `<button class="action-btn" onclick="window.testarTonerImpressora('${item.ip}', '${tonerId}')">Testar toner</button>`}
           </div>
         </td>
       </tr>
     `;
   }).join("");
-
-  const cardsHtml = lista.map(item => {
-    const estado = obterEstadoImpressora(item.ip);
-    const tonerId = `toner-mobile-${item.ip.replace(/\./g, "-")}`;
-    const info = printerFirebaseState[item.ip] ? mapFirebasePrinterInfo(printerFirebaseState[item.ip]) : (tonerInfoState[item.ip] || null);
-    const ipHtml = webMode ? item.ip : `<a href="http://${item.ip}" target="_blank" rel="noopener noreferrer">${item.ip}</a>`;
-    const estadoClass = String(estado || '').toLowerCase().includes('resolvido') ? 'resolved' : String(estado || '').toLowerCase().includes('ok') ? 'good' : 'attention';
-
-    return `
-      <article class="printer-mobile-card ${estadoClass}">
-        <div class="printer-mobile-head">
-          <div>
-            <h3>${item.modelo}</h3>
-            <p>${item.armazem} • ${item.localizacao}</p>
-          </div>
-          <span class="printer-mobile-badge">${estado}</span>
-        </div>
-        <div class="printer-mobile-meta">
-          <div><span>Série</span><strong>${item.serie}</strong></div>
-          <div><span>IP</span><strong>${ipHtml}</strong></div>
-        </div>
-        <div class="printer-mobile-toner" id="${tonerId}">${gerarHTMLToners(info)}</div>
-        <div class="printer-mobile-actions">
-          ${webMode ? "" : `<button class="action-btn ip" onclick="abrirIP('${item.ip}')">Abrir IP</button>`}
-          <button class="action-btn manut" onclick='abrirManutencaoDireta(${JSON.stringify(item)})'>Manutenção</button>
-          <button class="action-btn" onclick='abrirHistoricoImpressora(${JSON.stringify(item)})'>Histórico</button>
-          ${webMode ? "" : `<button class="action-btn" onclick="window.testarTonerImpressora('${item.ip}', '${tonerId}')">Atualizar</button>`}
-        </div>
-      </article>
-    `;
-  }).join("");
-
-  if (tbody) tbody.innerHTML = rowsHtml;
-  if (mobileCards) mobileCards.innerHTML = cardsHtml;
 };
 
 window.addEventListener("DOMContentLoaded", () => {
@@ -2896,6 +2830,141 @@ window.addEventListener("DOMContentLoaded", () => {
 });
 
 
+
+
+
+/* =========================
+   DIAGNÓSTICO DO TONER
+========================= */
+const tonerDiagnosticsState = {
+  running: false,
+  lastRunAt: null,
+  source: "—",
+  successCount: 0,
+  totalCount: 0,
+  status: "idle",
+  log: []
+};
+
+function formatDiagTime(date) {
+  if (!date) return "—";
+  try {
+    return new Intl.DateTimeFormat("pt-PT", { hour: "2-digit", minute: "2-digit", second: "2-digit", day: "2-digit", month: "2-digit" }).format(date);
+  } catch (e) {
+    return date.toLocaleString();
+  }
+}
+
+function resolveDiagSource() {
+  return (window.electronAPI && window.electronAPI.getTonerSNMP) ? "Leitura real SNMP" : "Firebase";
+}
+
+function renderTonerDiagnostics() {
+  const statusEl = el("tonerDiagStatus");
+  const dotEl = el("tonerDiagDot");
+  const lastRunEl = el("tonerDiagLastRun");
+  const sourceEl = el("tonerDiagSource");
+  const summaryEl = el("tonerDiagSummary");
+  const logEl = el("tonerDiagLog");
+  if (!statusEl || !dotEl || !lastRunEl || !sourceEl || !summaryEl || !logEl) return;
+
+  const map = {
+    idle: ["Sem teste", "is-idle"],
+    running: ["A testar", "is-running"],
+    ok: ["A funcionar", "is-ok"],
+    warn: ["Parcial", "is-warn"],
+    error: ["Com falhas", "is-error"]
+  };
+
+  const current = map[tonerDiagnosticsState.status] || map.idle;
+  statusEl.textContent = current[0];
+  dotEl.className = `diag-dot ${current[1]}`;
+  lastRunEl.textContent = formatDiagTime(tonerDiagnosticsState.lastRunAt);
+  sourceEl.textContent = tonerDiagnosticsState.source || "—";
+
+  if (tonerDiagnosticsState.running) {
+    summaryEl.textContent = `A testar ${tonerDiagnosticsState.totalCount || impressorasData.length || 0} impressoras`;
+  } else if (!tonerDiagnosticsState.lastRunAt) {
+    summaryEl.textContent = "À espera de teste";
+  } else {
+    summaryEl.textContent = `${tonerDiagnosticsState.successCount}/${tonerDiagnosticsState.totalCount || 0} impressoras com leitura`;
+  }
+
+  if (!tonerDiagnosticsState.log.length) {
+    logEl.innerHTML = '<div class="diagnostics-log-item is-muted">Ainda sem leituras.</div>';
+    return;
+  }
+
+  logEl.innerHTML = tonerDiagnosticsState.log.map(item => `
+    <div class="diagnostics-log-item">
+      <span class="diag-time">${item.time}</span>
+      <strong>${item.ip}</strong> · ${item.message}
+    </div>
+  `).join("");
+}
+
+function pushTonerDiagnosticLog(ip, message) {
+  tonerDiagnosticsState.log.unshift({
+    ip: ip || "Sistema",
+    message,
+    time: formatDiagTime(new Date())
+  });
+  tonerDiagnosticsState.log = tonerDiagnosticsState.log.slice(0, 10);
+  renderTonerDiagnostics();
+}
+
+function updateTonerDiagnosticStatus(status, partial = {}) {
+  tonerDiagnosticsState.status = status;
+  Object.assign(tonerDiagnosticsState, partial);
+  renderTonerDiagnostics();
+}
+
+function summarizeTonerInfo(info) {
+  if (!info) return "sem leitura";
+  if (Array.isArray(info.colors) && info.colors.length) {
+    return info.colors.map(c => `${c.label || c.key}: ${typeof c.percent === "number" ? Math.round(c.percent) : "N/D"}%`).join(" · ");
+  }
+  if (typeof info.percent === "number") return `Preto: ${Math.round(info.percent)}%`;
+  return "sem percentagem";
+}
+
+async function testarSistemaToner() {
+  updateTonerDiagnosticStatus("running", {
+    running: true,
+    source: resolveDiagSource(),
+    totalCount: impressorasData.length || 0,
+    successCount: 0
+  });
+  pushTonerDiagnosticLog("Sistema", `Teste iniciado por ${resolveDiagSource()}`);
+
+  let success = 0;
+  for (const item of impressorasData) {
+    const info = await obterTonerInfo(item.ip);
+    tonerInfoState[item.ip] = info || null;
+    const alvoId = `toner-${item.ip.replace(/\./g, "-")}`;
+    if (el(alvoId)) el(alvoId).innerHTML = gerarHTMLToners(info);
+    if (info) {
+      success += 1;
+      pushTonerDiagnosticLog(item.ip, summarizeTonerInfo(info));
+      maybeNotifyCriticalSupply(item.ip, info);
+    } else {
+      pushTonerDiagnosticLog(item.ip, "sem resposta");
+    }
+  }
+
+  updateTonerDiagnosticStatus(success === impressorasData.length ? "ok" : (success > 0 ? "warn" : "error"), {
+    running: false,
+    lastRunAt: new Date(),
+    successCount: success,
+    totalCount: impressorasData.length || 0,
+    source: resolveDiagSource()
+  });
+
+  renderDashboardCards();
+  renderImpressoras();
+}
+
+window.testarSistemaToner = testarSistemaToner;
 
 /* =========================
    VERSÃO / ONLINE-OFFLINE
