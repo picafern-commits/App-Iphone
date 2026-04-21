@@ -1,4 +1,4 @@
-Restauro seguro para iPhone
+Restauro seguro para Tablet
 
 Esta pasta é um restauro limpo da tua base original.
 Objetivo: voltar a ter a app a funcionar e os dados a aparecer.

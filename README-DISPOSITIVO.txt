@@ -1,4 +1,4 @@
-APP Braga iPhone
+APP Braga Tablet
 
 Base partilhada com as outras versões.
 Esta versão inclui:

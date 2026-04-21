@@ -1,4 +1,4 @@
-const APP_VERSION = "1.0.0";
+const APP_VERSION = "1.5.0";
 const firebaseConfig = {
   apiKey: "AIzaSyCSgw4rhBLW5mq4QClulubf6e0hf5lDJbo",
   authDomain: "toner-manager-756c4.firebaseapp.com",
@@ -240,7 +240,7 @@ let portasData = [
   { porta: "224", local: "BRA-BAL01", user: "BRA-BAL01", equipamento: "", ip: "192.168.10.183" },
   { porta: "223", local: "BRA-BAL01", user: "Jose Miguel / Gonçalo Santos", equipamento: "Computador", ip: "192.168.10.125" },
 
-  { porta: "222", local: "BRA-BAL02", user: "BRA-BAL02", equipamento: "Impressora", ip: "" },
+  { porta: "222", local: "BRA-BAL02", user: "BRA-BAL02", equipamento: "Impressora", ip: "192.168.10.184" },
   { porta: "221", local: "BRA-BAL02", user: "Rafael Araujo / Fabio Silva", equipamento: "Computador", ip: "192.168.10.126" },
 
   { porta: "220", local: "BRA-BAL03", user: "BRA-BAL03", equipamento: "Impressora", ip: "192.168.10.184" },
@@ -1429,6 +1429,7 @@ db.collection("stock").orderBy("created", "desc").onSnapshot(snap => {
   renderAlertasInteligentes();
   renderDashboardResumoInteligente();
   renderAlertasInteligentes();
+  renderModoGestorExtremo();
 }, error => {
   console.error(error);
   stockGlobal = loadBackupAppBraga(BACKUP_KEYS_APP_BRAGA.stock);
@@ -1440,6 +1441,7 @@ db.collection("stock").orderBy("created", "desc").onSnapshot(snap => {
   renderAlertasInteligentes();
   renderDashboardResumoInteligente();
   renderAlertasInteligentes();
+  renderModoGestorExtremo();
 });
 
 db.collection("historico").orderBy("created", "desc").onSnapshot(snap => {
@@ -1456,8 +1458,10 @@ db.collection("historico").orderBy("created", "desc").onSnapshot(snap => {
   hideBackupBadge();
   renderHistoricoCards(historicoGlobal);
   renderAlertasInteligentes();
+  renderModoGestorExtremo();
   renderDashboardResumoInteligente();
   renderAlertasInteligentes();
+  renderModoGestorExtremo();
 }, error => {
   console.error(error);
   historicoGlobal = loadBackupAppBraga(BACKUP_KEYS_APP_BRAGA.historico);
@@ -1465,8 +1469,10 @@ db.collection("historico").orderBy("created", "desc").onSnapshot(snap => {
   showBackupBadge();
   renderHistoricoCards(historicoGlobal);
   renderAlertasInteligentes();
+  renderModoGestorExtremo();
   renderDashboardResumoInteligente();
   renderAlertasInteligentes();
+  renderModoGestorExtremo();
 });
 
 db.collection("pcs").orderBy("created", "desc").onSnapshot(snap => {
@@ -1482,12 +1488,14 @@ db.collection("pcs").orderBy("created", "desc").onSnapshot(snap => {
   saveBackupAppBraga(BACKUP_KEYS_APP_BRAGA.pcs, pcsGlobal);
   hideBackupBadge();
   renderPCCards(pcsGlobal);
+  renderModoGestorExtremo();
 }, error => {
   console.error(error);
   pcsGlobal = loadBackupAppBraga(BACKUP_KEYS_APP_BRAGA.pcs);
   setText("countPCs", pcsGlobal.length);
   showBackupBadge();
   renderPCCards(pcsGlobal);
+  renderModoGestorExtremo();
 });
 
 db.collection("manutencoes").orderBy("created", "desc").onSnapshot(snap => {
@@ -1573,35 +1581,33 @@ function renderDashboardResumoInteligente() {
   if (!host) return;
 
   const buckets = getCriticalityBucketsAppBraga();
-  const topLocs = getTopLocalizacoesHistorico(3);
-  const ultimos = getUltimosMovimentos(3);
+  const topLocs = getTopLocalizacoesHistorico(4);
+  const ultimos = getUltimosMovimentos(4);
+
+  const critLabel = buckets.critical > 0 ? "Ação imediata" : "Sem críticos";
+  const warnLabel = buckets.warning > 0 ? "Vigiar" : "Sem avisos";
 
   host.innerHTML = `
     <div class="summary-grid">
       <div class="summary-card">
         <h4>Criticidade Real</h4>
         <div class="summary-value">${buckets.critical}</div>
-        <div class="meta-line">Críticas &lt; 10%</div>
+        <div class="meta-line">${critLabel} · toner abaixo de 10%</div>
       </div>
       <div class="summary-card">
         <h4>Atenção</h4>
         <div class="summary-value">${buckets.warning}</div>
-        <div class="meta-line">Entre 10% e 25%</div>
+        <div class="meta-line">${warnLabel} · entre 10% e 25%</div>
       </div>
       <div class="summary-card">
         <h4>Top Localizações</h4>
-        <ul class="summary-list">
-          ${topLocs.length ? topLocs.map(([k,v]) => `<li>${k} — ${v}</li>`).join("") : "<li>Sem dados</li>"}
-        </ul>
+        <ul class="summary-list">${topLocs.length ? topLocs.map(([k,v]) => `<li>${k} — ${v}</li>`).join("") : "<li>Sem dados ainda</li>"}</ul>
       </div>
       <div class="summary-card">
         <h4>Últimos Movimentos</h4>
-        <ul class="summary-list">
-          ${ultimos.length ? ultimos.map(item => `<li>${item.equipamento || "-"} · ${item.cor || "-"} · ${item.localizacao || "-"}</li>`).join("") : "<li>Sem histórico</li>"}
-        </ul>
+        <ul class="summary-list">${ultimos.length ? ultimos.map(item => `<li>${item.equipamento || "-"} · ${item.cor || "-"} · ${item.localizacao || "-"}</li>`).join("") : "<li>Sem histórico ainda</li>"}</ul>
       </div>
-    </div>
-  `;
+    </div>`;
 }
 
 function renderDashboardCards(items) {
@@ -2780,6 +2786,71 @@ window.addEventListener("DOMContentLoaded", () => {
    TABLET / FIREBASE COMPLETO
 ========================= */
 const printerFirebaseState = {};
+const printerFirebaseSyncState = {};
+
+function normalizePrinterIp(ip) {
+  return String(ip || "").trim().replace(/^https?:\/\//i, "").replace(/\/$/, "");
+}
+
+function hasUsablePrinterInfo(info) {
+  if (!info) return false;
+  if (Array.isArray(info.colors) && info.colors.length) return true;
+  if (info.residue && typeof info.residue.percent === "number") return true;
+  return typeof info.percent === "number";
+}
+
+function buildPrinterFirebasePayload(ip, info) {
+  const payload = {
+    ip: normalizePrinterIp(ip),
+    syncSource: "desktop-snmp",
+    updatedAtMs: Date.now(),
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  };
+
+  if (Array.isArray(info.colors) && info.colors.length) {
+    payload.toner = {};
+    info.colors.forEach((color) => {
+      if (!color || typeof color.percent !== "number") return;
+      const key = String(color.key || "").toLowerCase();
+      if (["black", "cyan", "magenta", "yellow"].includes(key)) {
+        payload.toner[key] = Math.max(0, Math.min(100, Math.round(color.percent)));
+      }
+    });
+  }
+
+  if (info.residue && typeof info.residue.percent === "number") {
+    payload.waste = Math.max(0, Math.min(100, Math.round(info.residue.percent)));
+  }
+
+  if (typeof info.percent === "number") {
+    payload.percent = Math.max(0, Math.min(100, Math.round(info.percent)));
+  } else if (payload.toner && typeof payload.toner.black === "number") {
+    payload.percent = payload.toner.black;
+  }
+
+  return payload;
+}
+
+async function syncPrinterInfoToFirebase(ip, info) {
+  const cleanIp = normalizePrinterIp(ip);
+  if (!cleanIp || !db || !db.collection || !hasUsablePrinterInfo(info)) return false;
+
+  const payload = buildPrinterFirebasePayload(cleanIp, info);
+  const compareKey = JSON.stringify({
+    ip: payload.ip,
+    toner: payload.toner || null,
+    waste: typeof payload.waste === "number" ? payload.waste : null,
+    percent: typeof payload.percent === "number" ? payload.percent : null
+  });
+
+  if (printerFirebaseSyncState[cleanIp] === compareKey) return true;
+
+  await db.collection("printers").doc(cleanIp).set(payload, { merge: true });
+  printerFirebaseSyncState[cleanIp] = compareKey;
+  printerFirebaseState[cleanIp] = Object.assign({}, printerFirebaseState[cleanIp] || {}, payload);
+  tonerInfoState[cleanIp] = mapFirebasePrinterInfo(printerFirebaseState[cleanIp]);
+  return true;
+}
 
 function normalizePrinterColorsFromFirebase(printerDoc) {
   const toner = printerDoc && printerDoc.toner ? printerDoc.toner : {};
@@ -2836,11 +2907,11 @@ function bindPrintersFirebaseRealtime() {
   db.collection("printers").onSnapshot((snap) => {
     snap.forEach((doc) => {
       const data = doc.data() || {};
-      const ip = data.ip || doc.id;
+      const ip = normalizePrinterIp(data.ip || doc.id);
       if (!ip) return;
 
       const mapped = mapFirebasePrinterInfo(data);
-      printerFirebaseState[ip] = data;
+      printerFirebaseState[ip] = Object.assign({}, data, { ip });
       tonerInfoState[ip] = mapped;
       maybeNotifyCriticalSupply(ip, mapped);
     });
@@ -2860,10 +2931,31 @@ function bindPrintersFirebaseRealtime() {
 
 const __originalObterTonerInfo = obterTonerInfo;
 obterTonerInfo = async function(ip) {
-  if (printerFirebaseState[ip]) {
-    return mapFirebasePrinterInfo(printerFirebaseState[ip]);
+  const cleanIp = normalizePrinterIp(ip);
+  const desktopMode = !!(window.electronAPI && window.electronAPI.getTonerSNMP);
+
+  if (desktopMode) {
+    const freshInfo = await __originalObterTonerInfo(cleanIp);
+    if (hasUsablePrinterInfo(freshInfo)) {
+      try {
+        await syncPrinterInfoToFirebase(cleanIp, freshInfo);
+      } catch (error) {
+        console.error("Erro ao sincronizar impressora para Firebase:", cleanIp, error);
+      }
+      return freshInfo;
+    }
+
+    if (printerFirebaseState[cleanIp]) {
+      return mapFirebasePrinterInfo(printerFirebaseState[cleanIp]);
+    }
+
+    return freshInfo;
   }
-  return await __originalObterTonerInfo(ip);
+
+  if (printerFirebaseState[cleanIp]) {
+    return mapFirebasePrinterInfo(printerFirebaseState[cleanIp]);
+  }
+  return await __originalObterTonerInfo(cleanIp);
 };
 
 const __originalTestarTodasAsImpressoras = testarTodasAsImpressoras;
@@ -3592,161 +3684,6 @@ async function gerarWordEtiquetaFromForm(auto = false) {
 window.gerarWordEtiquetaFromForm = gerarWordEtiquetaFromForm;
 
 
-/* SIDEBAR MOBILE FIX */
-function toggleSidebar() {
-  const sidebar = document.querySelector(".sidebar");
-  const overlay = document.getElementById("sidebarOverlay");
-  if (!sidebar) return;
-
-  const isOpen = sidebar.classList.contains("open");
-
-  if (isOpen) {
-    sidebar.classList.remove("open");
-    if (overlay) overlay.classList.remove("show");
-  } else {
-    sidebar.classList.add("open");
-    if (overlay) overlay.classList.add("show");
-  }
-}
-
-function closeSidebar() {
-  const sidebar = document.querySelector(".sidebar");
-  const overlay = document.getElementById("sidebarOverlay");
-
-  if (sidebar) sidebar.classList.remove("open");
-  if (overlay) overlay.classList.remove("show");
-}
-
-window.addEventListener("resize", () => {
-  if (window.innerWidth > 900) {
-    closeSidebar();
-  }
-});
-
-document.addEventListener("DOMContentLoaded", () => {
-  document.querySelectorAll(".sidebar a").forEach(link => {
-    link.addEventListener("click", () => {
-      if (window.innerWidth <= 900) {
-        closeSidebar();
-      }
-    });
-  });
-});
-
-window.toggleSidebar = toggleSidebar;
-window.closeSidebar = closeSidebar;
-
-
-/* SWIPE SIDEBAR IPHONE */
-let sidebarTouchStartX = 0;
-let sidebarTouchCurrentX = 0;
-let sidebarDragging = false;
-
-function getSidebarNode() {
-  return document.querySelector(".sidebar");
-}
-
-function getOverlayNode() {
-  return document.getElementById("sidebarOverlay");
-}
-
-function isSidebarOpen() {
-  const sidebar = getSidebarNode();
-  return !!sidebar && sidebar.classList.contains("open");
-}
-
-function openSidebar() {
-  const sidebar = getSidebarNode();
-  const overlay = getOverlayNode();
-  if (sidebar) sidebar.classList.add("open");
-  if (overlay) overlay.classList.add("show");
-}
-
-function closeSidebarSwipeSafe() {
-  const sidebar = getSidebarNode();
-  const overlay = getOverlayNode();
-  if (sidebar) {
-    sidebar.classList.remove("open");
-    sidebar.style.transform = "";
-  }
-  if (overlay) overlay.classList.remove("show");
-}
-
-window.closeSidebar = closeSidebarSwipeSafe;
-
-function handleTouchStartSidebar(event) {
-  if (window.innerWidth > 900) return;
-
-  const touch = event.touches[0];
-  sidebarTouchStartX = touch.clientX;
-  sidebarTouchCurrentX = touch.clientX;
-
-  const sidebar = getSidebarNode();
-  const open = isSidebarOpen();
-  const nearLeftEdge = sidebarTouchStartX <= 24;
-
-  if (open || nearLeftEdge) {
-    sidebarDragging = true;
-    if (!open) openSidebar();
-    if (sidebar) sidebar.style.transition = "none";
-  }
-}
-
-function handleTouchMoveSidebar(event) {
-  if (!sidebarDragging || window.innerWidth > 900) return;
-
-  const touch = event.touches[0];
-  sidebarTouchCurrentX = touch.clientX;
-
-  const sidebar = getSidebarNode();
-  if (!sidebar) return;
-
-  let delta = sidebarTouchCurrentX - sidebarTouchStartX;
-  if (!isSidebarOpen()) {
-    delta = Math.min(0, delta - 260);
-  } else {
-    delta = Math.min(0, delta);
-  }
-
-  if (delta < -260) delta = -260;
-  sidebar.style.transform = `translateX(${delta}px)`;
-}
-
-function handleTouchEndSidebar() {
-  if (!sidebarDragging || window.innerWidth > 900) return;
-
-  const sidebar = getSidebarNode();
-  if (!sidebar) return;
-
-  const moved = sidebarTouchCurrentX - sidebarTouchStartX;
-  sidebar.style.transition = "";
-
-  if (isSidebarOpen()) {
-    if (moved < -70) {
-      closeSidebarSwipeSafe();
-    } else {
-      sidebar.style.transform = "";
-      openSidebar();
-    }
-  } else {
-    if (moved > 70) {
-      sidebar.style.transform = "";
-      openSidebar();
-    } else {
-      closeSidebarSwipeSafe();
-    }
-  }
-
-  sidebarDragging = false;
-  sidebarTouchStartX = 0;
-  sidebarTouchCurrentX = 0;
-}
-
-document.addEventListener("touchstart", handleTouchStartSidebar, { passive: true });
-document.addEventListener("touchmove", handleTouchMoveSidebar, { passive: true });
-document.addEventListener("touchend", handleTouchEndSidebar, { passive: true });
-
-
 
 /* =========================
    PORTAS FIREBASE FALLBACK + MIGRAÇÃO
@@ -3826,15 +3763,43 @@ window.addEventListener("DOMContentLoaded", () => {
 });
 
 
+/* ===== AUTO UPDATE PRO FINAL ===== */
+const APP_REMOTE_BASE = "https://picafern-commits.github.io/App-Tablet/";
+const APP_VERSION_URL = APP_REMOTE_BASE + "version.json?t=" + Date.now();
+
+async function limparServiceWorkersAntigosAppBraga() {
+  try {
+    if (!("serviceWorker" in navigator)) return;
+    const regs = await navigator.serviceWorker.getRegistrations();
+    for (const reg of regs) {
+      await reg.unregister();
+    }
+    if ("caches" in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map(k => caches.delete(k)));
+    }
+  } catch (e) {
+    console.error("Erro a limpar service workers/cache", e);
+  }
+}
+
 async function verificarAtualizacao() {
   try {
-    const res = await fetch("https://picafern-commits.github.io/App-Tablet/version.json?t=" + Date.now(), { cache: "no-store" });
-    const data = await res.json();
+    await limparServiceWorkersAntigosAppBraga();
 
-    atualizarVersaoUI(data && data.version ? data.version : APP_VERSION);
+    const res = await fetch(APP_VERSION_URL, {
+      cache: "no-store",
+      headers: {
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        "Pragma": "no-cache"
+      }
+    });
+
+    const data = await res.json();
+    atualizarVersaoUI((data && data.version) ? data.version : APP_VERSION);
 
     if (data && data.version && data.version !== APP_VERSION) {
-      mostrarAvisoUpdate(data.version);
+      mostrarAvisoUpdateObrigatorio(data.version);
     }
   } catch (e) {
     console.error("Erro a verificar updates", e);
@@ -3851,38 +3816,41 @@ function atualizarVersaoUI(versionValue = APP_VERSION) {
   });
 }
 
-function mostrarAvisoUpdate(novaVersao) {
+function mostrarAvisoUpdateObrigatorio(novaVersao) {
+  let overlay = document.getElementById("updateOverlayAppBraga");
   let box = document.getElementById("updateBoxAppBraga");
+
+  if (!overlay) {
+    overlay = document.createElement("div");
+    overlay.id = "updateOverlayAppBraga";
+    overlay.className = "update-overlay-appbraga";
+    document.body.appendChild(overlay);
+  }
 
   if (!box) {
     box = document.createElement("div");
     box.id = "updateBoxAppBraga";
-    box.className = "update-box-appbraga";
+    box.className = "update-box-appbraga mandatory";
     document.body.appendChild(box);
   }
 
   box.innerHTML = `
-    <div class="update-title">🚀 Nova versão disponível</div>
+    <div class="update-title">🚀 Atualização obrigatória</div>
     <div class="update-subtitle">
+      Esta app está desatualizada e precisa de ser atualizada para continuar.<br><br>
       Atual: v${APP_VERSION} Premium<br>
       Nova: v${novaVersao} Premium
     </div>
     <div class="update-actions">
-      <button class="primary-btn" onclick="atualizarApp()">Atualizar</button>
-      <button class="secondary-btn" onclick="fecharAvisoUpdate()">Fechar</button>
+      <button class="primary-btn" onclick="atualizarAppObrigatorio()">Atualizar agora</button>
     </div>
   `;
+
+  document.body.style.overflow = "hidden";
 }
 
-function fecharAvisoUpdate() {
+function atualizarAppObrigatorio() {
   const box = document.getElementById("updateBoxAppBraga");
-  if (box) box.remove();
-}
-
-function atualizarApp() {
-  const box = document.getElementById("updateBoxAppBraga");
-  const isOnlineApp = window.location.href.includes("github.io");
-
   if (box) {
     box.innerHTML = `
       <div class="update-title">⏳ A atualizar...</div>
@@ -3890,13 +3858,48 @@ function atualizarApp() {
     `;
   }
 
-  setTimeout(() => {
-    if (isOnlineApp) {
-      window.location.reload();
-    } else {
-      window.location.href = "https://picafern-commits.github.io/App-Tablet/?update=" + Date.now();
+  const target = APP_REMOTE_BASE + "index.html?update=" + Date.now();
+  const currentBefore = window.location.href;
+
+  setTimeout(async () => {
+    try {
+      await limparServiceWorkersAntigosAppBraga();
+    } catch (e) {
+      console.error(e);
     }
-  }, 500);
+
+    try {
+      window.location.replace(target);
+    } catch (e) {
+      console.error("replace falhou", e);
+    }
+
+    setTimeout(() => {
+      if (window.location.href === currentBefore) {
+        try {
+          window.location.href = target;
+        } catch (e) {
+          console.error("href falhou", e);
+        }
+      }
+    }, 1200);
+
+    setTimeout(() => {
+      if (window.location.href === currentBefore) {
+        try {
+          const a = document.createElement("a");
+          a.href = target;
+          a.target = "_self";
+          a.rel = "noopener";
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+        } catch (e) {
+          console.error("link fallback falhou", e);
+        }
+      }
+    }, 2200);
+  }, 400);
 }
 
 window.addEventListener("load", verificarAtualizacao);
@@ -4293,6 +4296,148 @@ window.editarPistola = editarPistola;
 window.fecharEditarPistola = fecharEditarPistola;
 window.guardarEdicaoPistola = guardarEdicaoPistola;
 window.apagarPistola = apagarPistola;
+
+
+/* ===== MODO VISUAL ===== */
+function modoVisualInit() {
+  document.body.classList.add("modo-visual-on");
+  document.querySelectorAll(".panel, .pc-card, .dashboard-card, .stock-card, .history-card").forEach((node, index) => {
+    node.style.opacity = "0";
+    node.style.transform = "translateY(8px)";
+    setTimeout(() => {
+      node.style.transition = "opacity 0.24s ease, transform 0.24s ease";
+      node.style.opacity = "1";
+      node.style.transform = "translateY(0)";
+    }, 25 * Math.min(index, 10));
+  });
+}
+
+window.addEventListener("load", modoVisualInit);
+
+
+/* ===== MODO GESTOR EXTREMO ===== */
+function getTopConsumoEquipamentos(limit = 4) {
+  const map = new Map();
+  historicoGlobal.forEach(item => {
+    const key = `${item.equipamento || "-"} · ${item.localizacao || "-"}`;
+    map.set(key, (map.get(key) || 0) + 1);
+  });
+  return [...map.entries()].sort((a,b) => b[1]-a[1]).slice(0, limit);
+}
+
+function getTopProblemasDoDia(limit = 3) {
+  const buckets = getCriticalityBucketsAppBraga();
+  const topLocs = getTopLocalizacoesHistorico(2);
+  const ultimos = getUltimosMovimentos(1);
+  const problems = [];
+
+  if (buckets.critical > 0) {
+    problems.push(`Existem ${buckets.critical} impressoras em estado crítico.`);
+  }
+  if (buckets.warning > 0) {
+    problems.push(`Existem ${buckets.warning} impressoras em zona de atenção.`);
+  }
+  if (topLocs.length) {
+    problems.push(`Maior pressão recente em ${topLocs[0][0]} com ${topLocs[0][1]} movimentos.`);
+  }
+  if (ultimos.length) {
+    const u = ultimos[0];
+    problems.push(`Último movimento: ${u.equipamento || "-"} · ${u.cor || "-"} · ${u.localizacao || "-"}.`);
+  }
+
+  return problems.slice(0, limit);
+}
+
+function getPrioridadeMaximaGestor(limit = 4) {
+  const rows = [];
+  impressorasData.forEach(item => {
+    const info = tonerInfoState[item.ip] || null;
+    const colors = Array.isArray(info?.colors) ? info.colors : [];
+    const crit = colors.filter(c => typeof c.percent === "number" && c.percent <= 10);
+    if (crit.length) {
+      rows.push({
+        label: `${item.modelo} · ${item.localizacao}`,
+        detail: crit.map(c => `${c.label}: ${c.percent}%`).join(" | ")
+      });
+    }
+  });
+  return rows.slice(0, limit);
+}
+
+function renderModoGestorExtremo() {
+  const board = el("gestorExtremeBoard");
+  const prioridade = el("gestorPrioridadeMaxima");
+  const consumo = el("gestorTopConsumo");
+  const problemas = el("gestorTopProblemas");
+  if (!board && !prioridade && !consumo && !problemas) return;
+
+  const buckets = getCriticalityBucketsAppBraga();
+  const topLocs = getTopLocalizacoesHistorico(4);
+  const topEquip = getTopConsumoEquipamentos(4);
+  const topProb = getTopProblemasDoDia(3);
+  const maxRows = getPrioridadeMaximaGestor(4);
+
+  if (board) {
+    board.innerHTML = `
+      <div class="gestor-grid-hero">
+        <div class="gestor-hero-card">
+          <div class="gestor-hero-title">Estado executivo</div>
+          <div class="gestor-hero-value">${buckets.critical > 0 ? "Pressão" : "Estável"}</div>
+          <div class="gestor-hero-note">Visão imediata da operação para decidir onde agir primeiro.</div>
+          <div class="gestor-chip-row">
+            <span class="gestor-chip red">Críticos: ${buckets.critical}</span>
+            <span class="gestor-chip yellow">Atenção: ${buckets.warning}</span>
+            <span class="gestor-chip green">Stock: ${stockGlobal.length}</span>
+          </div>
+        </div>
+        <div class="gestor-card">
+          <h4>Movimento recente</h4>
+          <div class="gestor-mini-value">${historicoGlobal.length}</div>
+          <div class="meta-line">Total de registos usados no histórico.</div>
+        </div>
+        <div class="gestor-card">
+          <h4>Capacidade atual</h4>
+          <div class="gestor-mini-value">${stockGlobal.length}</div>
+          <div class="meta-line">Itens disponíveis agora em stock.</div>
+        </div>
+        <div class="gestor-card">
+          <h4>Base instalada</h4>
+          <div class="gestor-mini-value">${pcsGlobal.length}</div>
+          <div class="meta-line">PCs registados no sistema.</div>
+        </div>
+      </div>
+    `;
+  }
+
+  if (prioridade) {
+    prioridade.innerHTML = maxRows.length
+      ? maxRows.map(item => `<div class="gestor-priority-card"><h4>${item.label}</h4><div class="meta-line">${item.detail}</div></div>`).join("")
+      : `<div class="gestor-priority-card"><h4>Sem prioridade máxima</h4><div class="meta-line">Não existem impressoras abaixo de 10% neste momento.</div></div>`;
+  }
+
+  if (consumo) {
+    consumo.innerHTML = `
+      <div class="gestor-card">
+        <h4>Top Localizações</h4>
+        <ul class="gestor-list">
+          ${topLocs.length ? topLocs.map(([k,v]) => `<li>${k} — ${v} movimentos</li>`).join("") : "<li>Sem dados suficientes</li>"}
+        </ul>
+      </div>
+      <div class="gestor-card">
+        <h4>Top Equipamentos</h4>
+        <ul class="gestor-list">
+          ${topEquip.length ? topEquip.map(([k,v]) => `<li>${k} — ${v}</li>`).join("") : "<li>Sem dados suficientes</li>"}
+        </ul>
+      </div>
+    `;
+  }
+
+  if (problemas) {
+    problemas.innerHTML = topProb.length
+      ? topProb.map(txt => `<div class="gestor-alert-card"><h4>Ponto de gestão</h4><div class="meta-line">${txt}</div></div>`).join("")
+      : `<div class="gestor-alert-card"><h4>Sem alertas do dia</h4><div class="meta-line">Ainda não há dados suficientes para destacar problemas.</div></div>`;
+  }
+}
 
 
 
@@ -4768,7 +4913,7 @@ function renderEtiquetasWordCards() {
       <div class="meta-line">Equipamento: <span class="meta-value">${t.equipamento || '-'}</span></div>
       <div class="meta-line">Cor: <span class="meta-value">${t.cor || '-'}</span></div>
       <div class="meta-line">Lote: <span class="meta-value">${t.lote || '-'}</span></div>
-      <div class="meta-line">Data: <span class="meta-value">${t.dataScan || t.dataEtiqueta || t.data || t.dataFolha || '-'}</span></div>
+      <div class="meta-line">Data: <span class="meta-value">${t.dataEtiqueta || '-'}</span></div>
       <div class="meta-line">Origem: <span class="meta-value">${t.origem || 'scan'}</span></div>
       <div class="card-actions">
         <button class="small-btn btn-use" onclick="regerarEtiquetaWordPartilhada('${t.idDoc}')">Imprimir</button>
@@ -4803,10 +4948,10 @@ function montarHtmlEtiquetaImpressao(item) {
   html, body { margin:0; padding:0; width:100mm; height:150mm; font-family: Arial, sans-serif; }
   body { box-sizing:border-box; padding:8mm; color:#111; }
   .etq-wrap { width:100%; height:100%; display:flex; flex-direction:column; justify-content:flex-start; }
-  .etq-title { font-size:21px; font-weight:900; margin:0 0 6mm; }
+  .etq-title { font-size:20px; font-weight:700; margin:0 0 6mm; }
   .etq-row { display:flex; flex-direction:column; margin:0 0 3.5mm; }
-  .etq-key { font-size:12px; font-weight:900; text-transform:uppercase; letter-spacing:.4px; }
-  .etq-val { font-size:17px; line-height:1.3; font-weight:800; word-break:break-word; }
+  .etq-key { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; }
+  .etq-val { font-size:16px; line-height:1.25; word-break:break-word; }
 </style>
 </head>
 <body>
@@ -4839,28 +4984,20 @@ async function regerarEtiquetaWordPartilhada(id) {
     const oldTitle = document.title;
     document.title = `Etiqueta-${(item.localCurto || item.localizacao || 'Etiqueta')}`;
 
-    const cleanup = () => {
-      try { window.removeEventListener('afterprint', cleanup); } catch (e) {}
-      try { overlay.remove(); } catch (e) {}
-      document.title = oldTitle;
-    };
-
-    try { window.addEventListener('afterprint', cleanup, { once: true }); } catch (e) {}
-
-    // força render antes de imprimir
-    void overlay.offsetHeight;
-
-    try {
-      window.print();
-      mostrarMensagem('Etiqueta pronta a imprimir.');
-    } catch (e) {
-      console.error(e);
-      mostrarMensagem('Erro ao abrir a impressão.', 'erro');
-      cleanup();
-      return;
-    }
-
-    setTimeout(cleanup, 1200);
+    setTimeout(() => {
+      try {
+        window.print();
+        mostrarMensagem('Etiqueta pronta a imprimir.');
+      } catch (e) {
+        console.error(e);
+        mostrarMensagem('Erro ao abrir a impressão.', 'erro');
+      } finally {
+        setTimeout(() => {
+          try { overlay.remove(); } catch (e) {}
+          document.title = oldTitle;
+        }, 600);
+      }
+    }, 150);
   } catch (e) {
     console.error(e);
     mostrarMensagem('Erro ao preparar impressão.', 'erro');
@@ -4891,11 +5028,11 @@ function montarHtmlEtiquetaOverlay(item) {
         #printAreaEtiquetaAppBraga, #printAreaEtiquetaAppBraga * { visibility: visible !important; }
         #printAreaEtiquetaAppBraga { position: fixed !important; inset: 0 !important; width: 100mm !important; height: 150mm !important; margin: 0 !important; padding: 0 !important; overflow: hidden !important; background: #fff !important; }
       }
-      #printAreaEtiquetaAppBraga .etq-sheet { width:100mm; height:150mm; max-width:100mm; max-height:150mm; overflow:hidden; box-sizing:border-box; padding:8mm; color:#000; font-family:Arial, sans-serif; background:#fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; text-shadow: 0 0 1px #000; display:flex; flex-direction:column; justify-content:flex-start; break-inside: avoid; page-break-inside: avoid; break-after: avoid-page; page-break-after: avoid; }
-      #printAreaEtiquetaAppBraga .etq-title { font-size:21px; font-weight:900; margin:0 0 6mm; }
+      #printAreaEtiquetaAppBraga .etq-sheet { width:100mm; height:150mm; max-width:100mm; max-height:150mm; overflow:hidden; box-sizing:border-box; padding:8mm; color:#111; font-family:Arial, sans-serif; background:#fff; display:flex; flex-direction:column; justify-content:flex-start; break-inside: avoid; page-break-inside: avoid; break-after: avoid-page; page-break-after: avoid; }
+      #printAreaEtiquetaAppBraga .etq-title { font-size:20px; font-weight:700; margin:0 0 6mm; }
       #printAreaEtiquetaAppBraga .etq-row { display:flex; flex-direction:column; margin:0 0 3.5mm; }
-      #printAreaEtiquetaAppBraga .etq-key { font-size:12px; font-weight:900; text-transform:uppercase; letter-spacing:.4px; }
-      #printAreaEtiquetaAppBraga .etq-val { font-size:17px; line-height:1.3; font-weight:800; word-break:break-word; }
+      #printAreaEtiquetaAppBraga .etq-key { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; }
+      #printAreaEtiquetaAppBraga .etq-val { font-size:16px; line-height:1.25; word-break:break-word; }
     </style>
     <div class="etq-sheet">
       <div class="etq-title">${escapeHtml(item.localCurto || item.localizacao || 'Etiqueta')}</div>
